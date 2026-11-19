@@ -1,0 +1,51 @@
+services:
+  resultados-astro-web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: resultados-astro-web:v2.0
+    container_name: resultados-astro-web
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      TZ: America/Bogota
+    volumes:
+      - ./frontend/public/img/carousel:/usr/share/nginx/html/img/carousel:ro
+    depends_on:
+      resultados-astro-api:
+        condition: service_healthy
+    networks:
+      - red-gane-int
+
+  resultados-astro-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: resultados-astro-api:v2.0
+    container_name: resultados-astro-api
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    environment:
+      TZ: America/Bogota
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      CAROUSEL_IMAGES_DIR: /app/carousel
+    volumes:
+      - ./frontend/public/img/carousel:/app/carousel:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>r.json()).then(d=>process.exit(d.status==='ok'?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - red-gane-int
+
+networks:
+  red-gane-int:
+    external: true

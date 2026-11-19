@@ -1,0 +1,335 @@
+---
+---
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administración de Acumulados y Baloto</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: #1690a7;
+        margin: 0;
+        padding: 24px 16px;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .login-card {
+        width: 100%;
+        max-width: 440px;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        margin-top: 8vh;
+      }
+      .login-card h2 {
+        text-align: center;
+        margin: 0 0 20px;
+        color: #1e293b;
+      }
+      .admin-panel {
+        display: none;
+        width: 100%;
+        max-width: 1024px;
+        background: #ffffff;
+        padding: 28px;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      }
+      .form-group {
+        margin-bottom: 14px;
+      }
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #334155;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 15px;
+      }
+      .btn {
+        background: #0d47a1;
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 15px;
+      }
+      .btn-logout {
+        background: #dc2626;
+      }
+      .alert {
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+        font-weight: 600;
+        display: none;
+      }
+      .alert-error { background: #fee2e2; color: #991b1b; display: block; }
+      .alert-ok { background: #dcfce7; color: #166534; display: block; }
+      .section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .box {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 18px;
+      }
+      .box h3 {
+        margin-top: 0;
+        color: #0d47a1;
+      }
+      .balls-inputs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Formulario de Ingreso (equivalente a login_down/index.php) -->
+    <div class="login-card" id="login-view">
+      <h2>INGRESO ADMINISTRATIVO</h2>
+      <div id="login-alert" class="alert"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="uname">Usuario</label>
+          <input type="text" id="uname" name="uname" autocomplete="off" required />
+        </div>
+        <div class="form-group">
+          <label for="pass">Clave</label>
+          <input type="password" id="pass" name="pass" required />
+        </div>
+        <button type="submit" class="btn" style="width: 100%;">Ingresar</button>
+      </form>
+    </div>
+
+    <!-- Panel de Edición Manual (equivalente a login_down/editar/) -->
+    <div class="admin-panel" id="admin-view">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">Panel de Edición Manual y Sincronización PowerBI</h2>
+        <button type="button" class="btn btn-logout" id="btn-logout">Cerrar Sesión</button>
+      </div>
+      <div id="admin-alert" class="alert" style="margin-top: 14px;"></div>
+
+      <div class="section-grid">
+        <!-- 1. Acumulados -->
+        <div class="box">
+          <h3>Actualizar Acumulados</h3>
+          <form id="form-acumulados">
+            <input type="hidden" id="row_id" value="1" />
+            <div class="form-group">
+              <label>Acum 3 cifras</label>
+              <input type="text" id="edit_acum_3cifras" required />
+            </div>
+            <div class="form-group">
+              <label>Acum 4 cifras</label>
+              <input type="text" id="edit_acum_4cifras" required />
+            </div>
+            <div class="form-group">
+              <label>Acum Chance Millonario</label>
+              <input type="text" id="edit_acum_chmillonario" required />
+            </div>
+            <div class="form-group">
+              <label>Acum Baloto</label>
+              <input type="text" id="edit_acum_baloto" required />
+            </div>
+            <div class="form-group">
+              <label>Acum Revancha</label>
+              <input type="text" id="edit_acum_revancha" required />
+            </div>
+            <button type="submit" class="btn">Guardar Acumulados</button>
+          </form>
+        </div>
+
+        <!-- 2. Resultados Baloto -->
+        <div class="box">
+          <h3>Actualizar Resultado Baloto</h3>
+          <form id="form-baloto">
+            <div class="balls-inputs">
+              <div class="form-group"><label>Balota 1</label><input type="text" id="edit_b1" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 2</label><input type="text" id="edit_b2" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 3</label><input type="text" id="edit_b3" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 4</label><input type="text" id="edit_b4" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 5</label><input type="text" id="edit_b5" maxlength="2" required /></div>
+              <div class="form-group"><label>Súperbalota</label><input type="text" id="edit_b6" maxlength="2" required /></div>
+            </div>
+            <button type="submit" class="btn">Guardar Baloto</button>
+          </form>
+        </div>
+
+        <!-- 3. Resultados Revancha -->
+        <div class="box">
+          <h3>Actualizar Resultado Revancha</h3>
+          <form id="form-revancha">
+            <div class="balls-inputs">
+              <div class="form-group"><label>Balota 1</label><input type="text" id="edit_r1" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 2</label><input type="text" id="edit_r2" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 3</label><input type="text" id="edit_r3" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 4</label><input type="text" id="edit_r4" maxlength="2" required /></div>
+              <div class="form-group"><label>Balota 5</label><input type="text" id="edit_r5" maxlength="2" required /></div>
+              <div class="form-group"><label>Súperbalota</label><input type="text" id="edit_r6" maxlength="2" required /></div>
+            </div>
+            <button type="submit" class="btn">Guardar Revancha</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script is:inline>
+      let adminToken = sessionStorage.getItem('adminToken') || '';
+
+      function showAlert(id, msg, isError = false) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'alert ' + (isError ? 'alert-error' : 'alert-ok');
+      }
+
+      async function loadAdminData() {
+        const resp = await fetch('/api/admin/acumulados', {
+          headers: { Authorization: `Bearer ${adminToken}` }
+        });
+        if (!resp.ok) {
+          sessionStorage.removeItem('adminToken');
+          adminToken = '';
+          document.getElementById('login-view').style.display = 'block';
+          document.getElementById('admin-view').style.display = 'none';
+          return;
+        }
+        const data = await resp.json();
+        const row = data.rows?.[0];
+        if (!row) return;
+
+        document.getElementById('row_id').value = row.id;
+        document.getElementById('edit_acum_3cifras').value = row.acum_3cifras || '';
+        document.getElementById('edit_acum_4cifras').value = row.acum_4cifras || '';
+        document.getElementById('edit_acum_chmillonario').value = row.acum_chmillonario || '';
+        document.getElementById('edit_acum_baloto').value = row.acum_baloto || '';
+        document.getElementById('edit_acum_revancha').value = row.acum_revancha || '';
+
+        for (let i = 1; i <= 6; i++) {
+          document.getElementById(`edit_b${i}`).value = row[`resul_baloto${i}`] || '';
+          document.getElementById(`edit_r${i}`).value = row[`resul_revancha${i}`] || '';
+        }
+
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('admin-view').style.display = 'block';
+      }
+
+      document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const uname = document.getElementById('uname').value.trim();
+        const pass = document.getElementById('pass').value.trim();
+
+        const resp = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uname, pass })
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+          showAlert('login-alert', data.error || 'Error de autenticación', true);
+          return;
+        }
+        adminToken = data.token;
+        sessionStorage.setItem('adminToken', adminToken);
+        await loadAdminData();
+      });
+
+      document.getElementById('btn-logout')?.addEventListener('click', () => {
+        sessionStorage.removeItem('adminToken');
+        adminToken = '';
+        document.getElementById('login-view').style.display = 'block';
+        document.getElementById('admin-view').style.display = 'none';
+      });
+
+      document.getElementById('form-acumulados')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = {
+          id: document.getElementById('row_id').value,
+          acum_3cifras: document.getElementById('edit_acum_3cifras').value,
+          acum_4cifras: document.getElementById('edit_acum_4cifras').value,
+          acum_chmillonario: document.getElementById('edit_acum_chmillonario').value,
+          acum_baloto: document.getElementById('edit_acum_baloto').value,
+          acum_revancha: document.getElementById('edit_acum_revancha').value
+        };
+        const resp = await fetch('/api/admin/acumulados', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminToken}`
+          },
+          body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        showAlert('admin-alert', data.message || data.error, !data.success);
+      });
+
+      document.getElementById('form-baloto')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = {
+          id: document.getElementById('row_id').value,
+          resul_baloto1: document.getElementById('edit_b1').value,
+          resul_baloto2: document.getElementById('edit_b2').value,
+          resul_baloto3: document.getElementById('edit_b3').value,
+          resul_baloto4: document.getElementById('edit_b4').value,
+          resul_baloto5: document.getElementById('edit_b5').value,
+          resul_baloto6: document.getElementById('edit_b6').value
+        };
+        const resp = await fetch('/api/admin/baloto', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminToken}`
+          },
+          body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        showAlert('admin-alert', data.message || data.error, !data.success);
+      });
+
+      document.getElementById('form-revancha')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = {
+          id: document.getElementById('row_id').value,
+          resul_revancha1: document.getElementById('edit_r1').value,
+          resul_revancha2: document.getElementById('edit_r2').value,
+          resul_revancha3: document.getElementById('edit_r3').value,
+          resul_revancha4: document.getElementById('edit_r4').value,
+          resul_revancha5: document.getElementById('edit_r5').value,
+          resul_revancha6: document.getElementById('edit_r6').value
+        };
+        const resp = await fetch('/api/admin/revancha', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${adminToken}`
+          },
+          body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        showAlert('admin-alert', data.message || data.error, !data.success);
+      });
+
+      if (adminToken) {
+        loadAdminData();
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,84 @@
+---
+import BoardScripts from '../components/BoardScripts.astro';
+import BottomSection from '../components/BottomSection.astro';
+import FullscreenCarousel from '../components/FullscreenCarousel.astro';
+import HeaderBar from '../components/HeaderBar.astro';
+import LoteriasOficiales from '../components/LoteriasOficiales.astro';
+import ResumenSemanal from '../components/ResumenSemanal.astro';
+import SorteosDiarios from '../components/SorteosDiarios.astro';
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Resultados - Android TV">
+  <style>
+    .fullscreen-btn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 9998;
+      background: rgba(0, 0, 0, 0.55);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      color: #ffffff;
+      opacity: 0.35;
+    }
+    .fullscreen-btn:hover,
+    .fullscreen-btn:focus {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.9);
+      color: #111111;
+      transform: scale(1.08);
+    }
+  </style>
+
+  <button id="fullscreenBtn" class="fullscreen-btn" title="Pantalla completa" aria-label="Pantalla completa">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+    </svg>
+  </button>
+
+  <div class="main-content">
+    <HeaderBar />
+    <hr class="divider" />
+    <LoteriasOficiales />
+    <hr class="divider" />
+
+    <div class="container2-titles">
+      <div class="table__title2">
+        <span class="animated flip">SORTEOS DIARIOS</span>
+      </div>
+      <div class="table__title2">
+        <span class="animated flip">RESUMEN SEMANAL</span>
+      </div>
+    </div>
+
+    <div class="container2-tables">
+      <SorteosDiarios />
+      <ResumenSemanal />
+    </div>
+
+    <hr class="divider" />
+    <BottomSection unitLabel="MILL" />
+  </div>
+
+  <FullscreenCarousel />
+  <BoardScripts />
+
+  <script is:inline>
+    document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
+      const elem = document.documentElement;
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    });
+  </script>
+</Layout>

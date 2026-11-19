@@ -1,0 +1,98 @@
+---
+const rows = [
+  {
+    name: 'CHONTICO',
+    cells: [
+      { code: null, val: '-------' },
+      { code: 1, val: '0639-3' },
+      { code: 62, val: '0715' },
+      { code: 99, val: '9774' }
+    ]
+  },
+  {
+    name: 'DORADO',
+    cells: [
+      { code: 3, val: '1162' },
+      { code: 51, val: '2306' },
+      { code: 46, val: '6456' },
+      { code: 65, val: '0158' }
+    ]
+  },
+  {
+    name: 'PAISITA',
+    cells: [
+      { code: null, val: '-------' },
+      { code: 2, val: '2809' },
+      { code: 8, val: '2645' },
+      { code: 68, val: '5880' }
+    ]
+  },
+  {
+    name: 'CAFETERITO',
+    cells: [
+      { code: null, val: '-------' },
+      { code: 7, val: '1417' },
+      { code: 9, val: '5993' },
+      { code: 66, val: '0401' }
+    ]
+  },
+  {
+    name: 'SAMAN',
+    cells: [
+      { code: null, val: '-------' },
+      { code: 5, val: '6486' },
+      { code: null, val: '-------' },
+      { code: 64, val: '1080' }
+    ]
+  },
+  {
+    name: 'CARIBEÑA',
+    cells: [
+      { code: null, val: '-------' },
+      { code: null, val: '-------' },
+      { code: 167, val: '4185' },
+      { code: 168, val: '0135' }
+    ]
+  },
+  {
+    name: 'SINUANO',
+    cells: [
+      { code: null, val: '-------' },
+      { code: 185, val: '0367' },
+      { code: 191, val: '6388' },
+      { code: 192, val: '1195' }
+    ]
+  },
+  {
+    name: 'FANTASTICA',
+    cells: [
+      { code: null, val: '-------' },
+      { code: null, val: '-------' },
+      { code: 179, val: '4713' },
+      { code: 180, val: '1536' }
+    ]
+  }
+];
+---
+<div class="container-table2">
+  <div></div>
+  <div class="table__item3">MAÑANA</div>
+  <div class="table__item3">TARDE</div>
+  <div class="table__item3">NOCHE</div>
+  <div class="table__item3">FESTIVO</div>
+
+  {rows.map((row) => (
+    <>
+      <div class="table__item4">{row.name}</div>
+      {row.cells.map((cell) =>
+        cell.code === null ? (
+          <div class="table__item5">{cell.val}</div>
+        ) : (
+          <div class="cell-sorteo">
+            <div class={`table__item5 sorteo-${cell.code}`}>{cell.val}</div>
+          </div>
+        )
+      )}
+    </>
+  ))}
+</div>

@@ -1,0 +1,918 @@
+@charset "UTF-8";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden !important;
+  font-family: Arial, Helvetica, sans-serif;
+  background-image: url('/img/result-fondo.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
+  user-select: none;
+}
+
+/* Animaciones originales */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+    background-color: rgba(255, 255, 0, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes heartBeat {
+  0% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.18);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.18);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+@keyframes flip {
+  from {
+    transform: perspective(400px) scale3d(1, 1, 1) translate3d(0, 0, 0) rotate3d(0, 1, 0, -360deg);
+    animation-timing-function: ease-out;
+  }
+  40% {
+    transform: perspective(400px) scale3d(1, 1, 1) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -190deg);
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: perspective(400px) scale3d(1, 1, 1) translate3d(0, 0, 150px) rotate3d(0, 1, 0, -170deg);
+    animation-timing-function: ease-in;
+  }
+  80% {
+    transform: perspective(400px) scale3d(0.95, 0.95, 0.95) translate3d(0, 0, 0) rotate3d(0, 1, 0, 0deg);
+    animation-timing-function: ease-in;
+  }
+  to {
+    transform: perspective(400px) scale3d(1, 1, 1) translate3d(0, 0, 0) rotate3d(0, 1, 0, 0deg);
+    animation-timing-function: ease-in;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animated {
+  animation-duration: 1s;
+  animation-fill-mode: both;
+}
+
+.flip {
+  backface-visibility: visible;
+  animation-name: flip;
+}
+
+.heartBeat {
+  animation-name: heartBeat;
+  animation-duration: 1.3s;
+  animation-timing-function: ease-in-out;
+}
+
+/* ============================================================================
+   CONTENEDOR PRINCIPAL DE PANTALLA ÚNICA PARA TELEVISOR (16:9 SIN SCROLL)
+   ============================================================================ */
+.main-content {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 6.8vh 0.5vh 19vh 0.5vh 4.2vh 38.5vh 0.5vh 30vh;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+hr.divider {
+  border: none;
+  height: 100%;
+  min-height: 3px;
+  max-height: 6px;
+  background-color: #ffffff;
+  width: 100%;
+  margin: 0;
+}
+
+/* ============================================================================
+   1. CABECERA SUPERIOR (LOTERÍAS OFICIALES | RELOJ | DÍA | FECHA | LOGOS)
+   ============================================================================ */
+.container4 {
+  display: grid;
+  grid-template-columns: 34% 37% 29%;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 0.5vw;
+}
+
+.table__title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #f8bb02;
+  font-weight: 900;
+  font-size: clamp(18px, 2.25vw, 46px);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.container-table9 {
+  display: grid;
+  grid-template-columns: 1.15fr 0.9fr 1.15fr;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  gap: 0.5vw;
+}
+
+.reloj {
+  display: flex;
+  color: #e40000;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(16px, 2.15vw, 44px);
+  white-space: nowrap;
+}
+
+.dia_semana {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(15px, 1.85vw, 38px);
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.fecha-actual {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(15px, 1.85vw, 38px);
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   2. LOTERÍAS OFICIALES (5 COLUMNAS x 4 FILAS = 20 LOTERÍAS)
+   ============================================================================ */
+.container {
+  display: grid;
+  grid-template-columns: 24fr 23fr 24fr 24fr 29fr;
+  width: 100%;
+  height: 100%;
+  padding: 0.3vh 0.25vw;
+  gap: 0.35vw;
+}
+
+.container-table {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background-color: rgb(255 255 255 / 25%);
+  box-shadow: 0 0 10px #333;
+  display: grid;
+  grid-template-columns: 46% 54%;
+  grid-template-rows: repeat(4, 1fr);
+  column-gap: 0.2vw;
+  align-items: center;
+  border-right: #ffffff clamp(5px, 0.55vw, 11px) solid;
+  padding: 0 0.35vw;
+  overflow: hidden;
+}
+
+.table__item {
+  display: flex;
+  color: #ffffff;
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  justify-content: flex-start;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(10px, 1.12vw, 23px);
+  letter-spacing: 0.3px;
+  transform: scaleY(1.2);
+  transform-origin: center;
+  white-space: nowrap;
+  padding-left: 0.15vw;
+}
+
+.table__item2 {
+  width: 100%;
+  display: flex;
+  color: #ffffff;
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(16px, 2.08vw, 42px);
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ============================================================================
+   3. TÍTULOS Y TABLAS DE SORTEOS DIARIOS Y RESUMEN SEMANAL
+   ============================================================================ */
+.container2-titles {
+  display: grid;
+  grid-template-columns: 62fr 63fr;
+  width: 100%;
+  height: 100%;
+  padding: 0.2vh 0.35vw;
+  gap: 0.6vw;
+  align-items: center;
+}
+
+.table__title2 {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #f8bb02;
+  text-shadow: 0 0 10px rgb(0, 45, 114);
+  background-color: rgb(255 255 255 / 60%);
+  font-weight: 900;
+  font-size: clamp(13px, 1.3vw, 25px);
+  box-shadow: 0 0 5px #333;
+  border-bottom: #ffffff clamp(4px, 0.5vh, 10px) solid;
+  letter-spacing: 0.5px;
+}
+
+.container2-tables {
+  display: grid;
+  grid-template-columns: 62fr 63fr;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0.25vh 0.35vw 0.45vh;
+  gap: 0.6vw;
+  align-items: start;
+  overflow: hidden;
+}
+
+/* Tabla Sorteos Diarios (5 columnas x 9 filas) */
+.container-table2 {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background-color: rgb(255 255 255 / 25%);
+  box-shadow: 0 0 10px #333;
+  display: grid;
+  grid-template-columns: 1.08fr repeat(4, 1fr);
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.table__item3 {
+  display: flex;
+  color: #9c0910;
+  -webkit-text-stroke: 1px #ffffff;
+  paint-order: stroke fill;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(12px, 1.42vw, 28px);
+  border: #ffffff clamp(1.5px, 0.14vw, 3px) solid;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.table__item4 {
+  display: flex;
+  color: #ffffff;
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  justify-content: flex-start;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(10px, 1.05vw, 21px);
+  letter-spacing: 0.4px;
+  transform: scaleY(1.2);
+  transform-origin: center;
+  padding-left: 0.35vw;
+  white-space: nowrap;
+}
+
+.cell-sorteo {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.table__item5 {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  color: #ffffff;
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(14px, 1.72vw, 34px);
+  border: #ffffff clamp(1.5px, 0.15vw, 3px) solid;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Tabla Resumen Semanal (7 columnas x 6 filas) */
+.container-table3 {
+  width: 100%;
+  height: 82%;
+  min-height: 0;
+  background-color: rgb(255 255 255 / 25%);
+  box-shadow: 0 0 10px #333;
+  display: grid;
+  grid-template-columns: 1.15fr repeat(6, 1fr);
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.table__item6 {
+  display: flex;
+  color: #9c0910;
+  -webkit-text-stroke: 1px #ffffff;
+  paint-order: stroke fill;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(13px, 1.55vw, 31px);
+  border: #ffffff clamp(2px, 0.16vw, 3px) solid;
+  white-space: nowrap;
+}
+
+.table__item7 {
+  display: flex;
+  color: #ffffff;
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  justify-content: flex-start;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(10px, 1.05vw, 21px);
+  letter-spacing: 0.4px;
+  transform: scaleY(1.25);
+  transform-origin: center;
+  padding-left: 0.35vw;
+  white-space: nowrap;
+}
+
+.cell-resumen {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.table__item8 {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  color: #ffffff;
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(13px, 1.55vw, 31px);
+  border: #ffffff clamp(2px, 0.16vw, 3px) solid;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   4. SECCIÓN INFERIOR (ACUMULADOS | SLIDER NORMAS | ÚLTIMO SORTEO | BALOTO)
+   ============================================================================ */
+.container3 {
+  display: grid;
+  grid-template-columns: 42fr 20fr 20fr 42fr;
+  width: 100%;
+  height: 100%;
+  padding: 0.3vh 0.35vw;
+  gap: 0.4vw;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+/* Columna 1: Doble Chance 3, Doble Chance 4, Chance Millonario */
+.container-table4 {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1.25fr 0.85fr 1.25fr 0.55fr;
+  grid-template-rows: repeat(3, 1fr);
+  align-items: center;
+  padding: 0 0.2vw;
+}
+
+.logo-acum-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.logo-acum-wrapper h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.doble3 {
+  width: clamp(95px, 10.5vw, 210px);
+  max-height: 8.8vh;
+  object-fit: contain;
+  display: block;
+}
+
+.table__title3 {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(13px, 1.5vw, 30px);
+  transform: scaleY(1.45);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.table__item9 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  font-weight: 900;
+  transform: scaleY(1.2);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.table__item9 h1 {
+  margin: 0;
+  font-size: clamp(18px, 2.15vw, 42px);
+  font-weight: 900;
+}
+
+.table__item10 {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  color: #ffffff;
+  font-size: clamp(12px, 1.3vw, 26px);
+  font-weight: 900;
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  letter-spacing: 0.5px;
+  transform: scaleY(1.45);
+  transform-origin: center;
+  white-space: nowrap;
+  padding-right: 0.3vw;
+}
+
+/* Columna 2: Mini Carrusel Normativo */
+.container-table5 {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: #ffffff clamp(5px, 0.55vw, 10px) solid;
+  padding: 0.4vh 0.6vw;
+  overflow: hidden;
+}
+
+.normas-slider {
+  position: relative;
+  width: 92%;
+  height: 86%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: transparent;
+}
+
+.normas-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.normas-slide.active {
+  opacity: 1;
+}
+
+.normas-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.normas-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5vh;
+  height: 10%;
+}
+
+.normas-dot {
+  width: clamp(6px, 0.55vw, 10px);
+  height: clamp(6px, 0.55vw, 10px);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.normas-dot.active {
+  background: #ffffff;
+}
+
+/* Columna 3: Recuadro ULTIMO SORTEO */
+.container-table10 {
+  width: 94%;
+  height: 96%;
+  margin: auto;
+  display: grid;
+  grid-template-rows: 18% 22% 28% 18% 14%;
+  align-items: center;
+  justify-items: center;
+  background-color: rgb(255 255 255 / 50%);
+  text-shadow: 0 0 10px black;
+  overflow: hidden;
+}
+
+.sorteo {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 800;
+  font-size: clamp(12px, 1.35vw, 27px);
+  background-color: rgb(255 255 255 / 50%);
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.dia_sorteo {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(16px, 2.1vw, 42px);
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+}
+
+.dia-sorteo {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(24px, 3vw, 58px);
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  line-height: 1;
+}
+
+.mes-sorteo {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(16px, 2.1vw, 42px);
+  text-shadow:
+    3px 3px 6px black,
+    -2px -2px 4px black,
+    2px -2px 4px black,
+    -2px 2px 4px black;
+  letter-spacing: 0.8px;
+}
+
+.año-sorteo {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(13px, 1.55vw, 30px);
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  letter-spacing: 0.5px;
+}
+
+/* Columna 4: Baloto y Revancha */
+.container-table6 {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 20% 30% 20% 30%;
+  align-items: center;
+  overflow: hidden;
+}
+
+.container-table7 {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 0.95fr 0.78fr 1.25fr 1.02fr;
+  column-gap: 0.25vw;
+  align-items: center;
+  padding: 0 0.3vw;
+}
+
+.container-table7 h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.baloto,
+.revancha {
+  width: clamp(72px, 7.8vw, 158px);
+  max-height: 5.5vh;
+  object-fit: contain;
+  display: block;
+}
+
+.table__item15 {
+  display: flex;
+  color: #ffffff;
+  justify-content: center;
+  align-items: center;
+  font-weight: 900;
+  font-size: clamp(12px, 1.32vw, 27px);
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  letter-spacing: 0.4px;
+  transform: scaleY(1.32);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.table__item12 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  text-shadow:
+    2px 2px 4px black,
+    -1px -1px 2px black,
+    1px -1px 2px black,
+    -1px 1px 2px black;
+  letter-spacing: 0.4px;
+  transform: scaleY(1.1);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.table__item12 h1 {
+  margin: 0;
+  font-size: clamp(15px, 1.8vw, 36px);
+  font-weight: 900;
+}
+
+.container-table8 {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: center;
+  justify-items: center;
+  padding: 0 0.2vw;
+}
+
+.table__item13,
+.table__item14 {
+  display: flex;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  text-decoration: underline;
+  font-weight: 800;
+  font-size: clamp(18px, min(2.1vw, 3.8vh), 40px);
+  width: clamp(44px, min(4.6vw, 8.2vh), 88px);
+  height: clamp(44px, min(4.6vw, 8.2vh), 88px);
+  box-shadow: 5px 5px 5px -1px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+
+.table__item13 {
+  color: #000000;
+  background-image: url('/img/balotas/yellow-ball.png');
+}
+
+.table__item14 {
+  color: #ffffff;
+  background-image: url('/img/balotas/red-ball.png');
+}
+
+/* ============================================================================
+   5. CARRUSEL COMERCIAL DE PANTALLA COMPLETA
+   ============================================================================ */
+.carousel-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 10px;
+}
+
+.carousel-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 5px;
+}
+
+.carousel-slide.active {
+  opacity: 1;
+}
+
+.carousel-slide img {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
+  display: block;
+  animation: fadeIn 0.8s ease-out;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+}
+
+.carousel-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.carousel-indicator.active {
+  background: #ffffff;
+  transform: scale(1.2);
+}
+
+body.show-carousel {
+  overflow: hidden !important;
+}
+
+body.show-carousel .main-content {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+body.show-carousel .carousel-container {
+  display: flex !important;
+}

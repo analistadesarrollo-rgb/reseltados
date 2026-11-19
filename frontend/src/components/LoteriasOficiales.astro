@@ -1,0 +1,46 @@
+---
+const columns = [
+  [
+    { code: 10, label: 'CUN/MARCA', defaultVal: '1651-0' },
+    { code: 11, label: 'TOLIMA', defaultVal: '7565' },
+    { code: 13, label: 'CRUZ ROJA', defaultVal: '3828-3' },
+    { code: 14, label: 'HUILA', defaultVal: '8566' }
+  ],
+  [
+    { code: 17, label: 'VALLE', defaultVal: '7366-7' },
+    { code: 18, label: 'MANIZALES', defaultVal: '7300' },
+    { code: 211, label: 'META', defaultVal: '6121' },
+    { code: 22, label: 'BOGOTA', defaultVal: '1970-9' }
+  ],
+  [
+    { code: 23, label: 'QUINDIO', defaultVal: '8395' },
+    { code: 26, label: 'MEDELLIN', defaultVal: '5724-5' },
+    { code: 29, label: 'RISARALDA', defaultVal: '5950' },
+    { code: 30, label: 'SANTANDER', defaultVal: '5198' }
+  ],
+  [
+    { code: 33, label: 'BOYACA', defaultVal: '4483' },
+    { code: 27, label: 'CAUCA', defaultVal: '3633-2' },
+    { code: 34, label: 'EXTRA', defaultVal: '8259' },
+    { code: 95, label: 'SUPERCHON', defaultVal: '7899' }
+  ],
+  [
+    { code: 52, label: 'PAISITA SA', defaultVal: '7259' },
+    { code: 46, label: 'DORN SAB', defaultVal: '6456' },
+    { code: 47, label: 'ASTRO SOL', defaultVal: '0748ACU' },
+    { code: 48, label: 'ASTRO LUNA', defaultVal: '7067LIB' }
+  ]
+];
+---
+<div class="container">
+  {columns.map((col) => (
+    <div class="container-table">
+      {col.map((item) => (
+        <>
+          <div class="table__item" id={`label-loteria-${item.code}`}>{item.label}</div>
+          <div class="table__item2" id={`resultado-${item.code}`}>{item.defaultVal}</div>
+        </>
+      ))}
+    </div>
+  ))}
+</div>

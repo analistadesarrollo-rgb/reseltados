@@ -1,0 +1,500 @@
+---
+---
+<script is:inline>
+  (function () {
+    // =========================================================================
+    // 1. RELOJ Y FECHAS SINCRONIZADOS CON SERVIDOR (America/Bogota)
+    // =========================================================================
+    let serverTimeOffset = 0;
+
+    const DIAS_SEMANA_ES = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+    const MESES_CORTOS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MESES_LARGO_ES = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    function updateFechasLocales(now) {
+      try {
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Bogota',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        const parts = {};
+        fmt.formatToParts(now).forEach((p) => {
+          if (p.type !== 'literal') parts[p.type] = p.value;
+        });
+
+        const isoDate = `${parts.year}-${parts.month}-${parts.day}`;
+        const bogotaNoon = new Date(`${isoDate}T12:00:00-05:00`);
+        const dayOfWeek = bogotaNoon.getUTCDay();
+        const monthIdx = parseInt(parts.month, 10) - 1;
+
+        const diaSemanaElem = document.getElementById('dia-semana-display');
+        if (diaSemanaElem) diaSemanaElem.textContent = DIAS_SEMANA_ES[dayOfWeek];
+
+        const dateDisplayElem = document.getElementById('date_display');
+        if (dateDisplayElem) {
+          dateDisplayElem.textContent = `${parts.day}/${MESES_CORTOS_EN[monthIdx]}/${parts.year}`;
+        }
+
+        let diaSorteoNombre = 'MIÉRCOLES';
+        let diasAtras = 1;
+        switch (dayOfWeek) {
+          case 0: diaSorteoNombre = 'SÁBADO'; diasAtras = 1; break;
+          case 1: diaSorteoNombre = 'SÁBADO'; diasAtras = 2; break;
+          case 2: diaSorteoNombre = 'LUNES'; diasAtras = 1; break;
+          case 3: diaSorteoNombre = 'LUNES'; diasAtras = 2; break;
+          case 4: diaSorteoNombre = 'MIÉRCOLES'; diasAtras = 1; break;
+          case 5: diaSorteoNombre = 'MIÉRCOLES'; diasAtras = 2; break;
+          case 6: diaSorteoNombre = 'MIÉRCOLES'; diasAtras = 3; break;
+        }
+
+        const sorteoDate = new Date(bogotaNoon.getTime() - diasAtras * 86400000);
+        const sorteoParts = {};
+        fmt.formatToParts(sorteoDate).forEach((p) => {
+          if (p.type !== 'literal') sorteoParts[p.type] = p.value;
+        });
+
+        const elDiaSem = document.getElementById('ultimo-sorteo-dia-semana');
+        const elDiaNum = document.getElementById('ultimo-sorteo-dia-numero');
+        const elMes = document.getElementById('ultimo-sorteo-mes');
+        const elAnio = document.getElementById('ultimo-sorteo-anio');
+
+        if (elDiaSem) elDiaSem.textContent = diaSorteoNombre;
+        if (elDiaNum) elDiaNum.textContent = sorteoParts.day;
+        if (elMes) elMes.textContent = MESES_LARGO_ES[parseInt(sorteoParts.month, 10) - 1];
+        if (elAnio) elAnio.textContent = parts.year;
+      } catch (e) {
+        console.warn('Error calculando fechas locales:', e);
+      }
+    }
+
+    async function syncServerTime() {
+      try {
+        const response = await fetch('/api/time', { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        if (data.success) {
+          const serverMs = data.timestampMs || data.timestamp * 1000;
+          serverTimeOffset = serverMs - Date.now();
+          if (data.fechas) {
+            const f = data.fechas;
+            const diaSemanaElem = document.getElementById('dia-semana-display');
+            const dateDisplayElem = document.getElementById('date_display');
+            if (diaSemanaElem && f.diaSemana) diaSemanaElem.textContent = f.diaSemana;
+            if (dateDisplayElem && f.fechaActual) dateDisplayElem.textContent = f.fechaActual;
+            if (f.ultimoSorteo) {
+              const elDiaSem = document.getElementById('ultimo-sorteo-dia-semana');
+              const elDiaNum = document.getElementById('ultimo-sorteo-dia-numero');
+              const elMes = document.getElementById('ultimo-sorteo-mes');
+              const elAnio = document.getElementById('ultimo-sorteo-anio');
+              if (elDiaSem) elDiaSem.textContent = f.ultimoSorteo.diaSemana;
+              if (elDiaNum) elDiaNum.textContent = f.ultimoSorteo.diaNumero;
+              if (elMes) elMes.textContent = f.ultimoSorteo.mesNombre;
+              if (elAnio) elAnio.textContent = f.ultimoSorteo.anio;
+            }
+          }
+        }
+      } catch (_err) {
+        updateFechasLocales(new Date(Date.now() + serverTimeOffset));
+      }
+    }
+
+    function tickClock() {
+      const now = new Date(Date.now() + serverTimeOffset);
+      const bogotaTime = now.toLocaleTimeString('en-US', {
+        timeZone: 'America/Bogota',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+      const relojElem = document.getElementById('reloj');
+      if (relojElem) {
+        relojElem.textContent = bogotaTime;
+      }
+    }
+
+    // =========================================================================
+    // 2. ACTUALIZACIÓN AUTOMÁTICA DE RESULTADOS SIN RECARGAR PÁGINA
+    // =========================================================================
+    let lastDataHash = null;
+    let resultadosCache = {};
+    let fetchInFlight = false;
+
+    function actualizarElementoConAnimacion(elemento, nuevoValor) {
+      if (!elemento || nuevoValor === null || nuevoValor === undefined) return false;
+      const nuevoStr = String(nuevoValor).trim();
+      if (nuevoStr === '') return false;
+
+      const valorActual = elemento.textContent.trim();
+      if (valorActual !== nuevoStr) {
+        elemento.textContent = nuevoStr;
+        elemento.style.animation = 'none';
+        setTimeout(() => {
+          elemento.style.animation = 'pulse 0.5s ease-in-out';
+        }, 10);
+        return true;
+      }
+      return false;
+    }
+
+    function actualizarResultados(data) {
+      if (!data) return;
+
+      // 1. Loterías Oficiales
+      if (data.loteriaOficial) {
+        Object.keys(data.loteriaOficial).forEach((codigo) => {
+          const item = data.loteriaOficial[codigo];
+          if (!item || !item.resultado) return;
+          const elem = document.getElementById(`resultado-${codigo}`);
+          const cacheKey = `loteria_${codigo}`;
+          if (elem && resultadosCache[cacheKey] !== item.resultado) {
+            actualizarElementoConAnimacion(elem, item.resultado);
+            resultadosCache[cacheKey] = item.resultado;
+          }
+        });
+      }
+
+      // 2. Sorteos Diarios
+      if (data.sorteosDiarios) {
+        Object.keys(data.sorteosDiarios).forEach((codigo) => {
+          const item = data.sorteosDiarios[codigo];
+          if (!item || !item.resultado) return;
+          const elem = document.querySelector(`.sorteo-${codigo}`);
+          const cacheKey = `sorteo_${codigo}`;
+          if (elem && resultadosCache[cacheKey] !== item.resultado) {
+            actualizarElementoConAnimacion(elem, item.resultado);
+            resultadosCache[cacheKey] = item.resultado;
+          }
+        });
+      }
+
+      // 3. Acumulados
+      if (data.acumulados) {
+        const mapAcum = {
+          'acumulado-3cifras-display': { val: data.acumulados.acum_3cifras, key: 'acum_3cifras' },
+          'acumulado-4cifras-display': { val: data.acumulados.acum_4cifras, key: 'acum_4cifras' },
+          'acumulado-chance-display': { val: data.acumulados.acum_chmillonario, key: 'acum_chmillonario' },
+          'acumulado-baloto-display': { val: data.acumulados.acum_baloto, key: 'acum_baloto' },
+          'acumulado-revancha-display': { val: data.acumulados.acum_revancha, key: 'acum_revancha' }
+        };
+
+        Object.keys(mapAcum).forEach((id) => {
+          const info = mapAcum[id];
+          if (!info.val) return;
+          const formatted = info.val.startsWith('$') ? info.val : '$' + info.val;
+          const elem = document.getElementById(id);
+          if (elem && resultadosCache[info.key] !== formatted) {
+            actualizarElementoConAnimacion(elem, formatted);
+            resultadosCache[info.key] = formatted;
+          }
+        });
+      }
+
+      // 4. Baloto
+      if (data.baloto) {
+        for (let i = 1; i <= 6; i++) {
+          const val = data.baloto[`resul_baloto${i}`];
+          const elem = document.getElementById(`baloto${i}-display`);
+          const key = `resul_baloto${i}`;
+          if (elem && val && resultadosCache[key] !== val) {
+            actualizarElementoConAnimacion(elem, val);
+            resultadosCache[key] = val;
+          }
+        }
+      }
+
+      // 5. Revancha
+      if (data.revancha) {
+        for (let i = 1; i <= 6; i++) {
+          const val = data.revancha[`resul_revancha${i}`];
+          const elem = document.getElementById(`revancha${i}-display`);
+          const key = `resul_revancha${i}`;
+          if (elem && val && resultadosCache[key] !== val) {
+            actualizarElementoConAnimacion(elem, val);
+            resultadosCache[key] = val;
+          }
+        }
+      }
+
+      // 6. Resumen Semanal
+      if (data.resumenSemanal) {
+        const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+        Object.keys(data.resumenSemanal).forEach((codigo) => {
+          const semanaData = data.resumenSemanal[codigo];
+          if (!semanaData) return;
+          for (let weekday = 0; weekday <= 5; weekday++) {
+            const cell = semanaData[weekday];
+            if (cell && cell.resultado) {
+              const dia = diasSemana[weekday];
+              const elem = document.getElementById(`resumen-${codigo}-${dia}`);
+              const key = `resumen_${codigo}_${weekday}`;
+              if (elem && resultadosCache[key] !== cell.resultado) {
+                actualizarElementoConAnimacion(elem, cell.resultado);
+                resultadosCache[key] = cell.resultado;
+              }
+            }
+          }
+        });
+      }
+    }
+
+    async function obtenerDatosActualizados() {
+      if (fetchInFlight) return;
+      fetchInFlight = true;
+
+      try {
+        const query = lastDataHash ? `?hash=${encodeURIComponent(lastDataHash)}&t=${Date.now()}` : `?t=${Date.now()}`;
+        const response = await fetch(`/api/datos${query}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache'
+          }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+
+        if (payload.success) {
+          if (payload.fechas) {
+            const f = payload.fechas;
+            const diaSemanaElem = document.getElementById('dia-semana-display');
+            const dateDisplayElem = document.getElementById('date_display');
+            if (diaSemanaElem && f.diaSemana) diaSemanaElem.textContent = f.diaSemana;
+            if (dateDisplayElem && f.fechaActual) dateDisplayElem.textContent = f.fechaActual;
+            if (f.ultimoSorteo) {
+              const elDiaSem = document.getElementById('ultimo-sorteo-dia-semana');
+              const elDiaNum = document.getElementById('ultimo-sorteo-dia-numero');
+              const elMes = document.getElementById('ultimo-sorteo-mes');
+              const elAnio = document.getElementById('ultimo-sorteo-anio');
+              if (elDiaSem) elDiaSem.textContent = f.ultimoSorteo.diaSemana;
+              if (elDiaNum) elDiaNum.textContent = f.ultimoSorteo.diaNumero;
+              if (elMes) elMes.textContent = f.ultimoSorteo.mesNombre;
+              if (elAnio) elAnio.textContent = f.ultimoSorteo.anio;
+            }
+          }
+
+          if (!payload.unchanged && payload.data) {
+            actualizarResultados(payload.data);
+            lastDataHash = payload.hash || JSON.stringify(payload.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Interrupción temporal consultando /api/datos, conservando datos en pantalla:', err.message);
+      } finally {
+        fetchInFlight = false;
+      }
+    }
+
+    // =========================================================================
+    // 3. MINI CARRUSEL NORMATIVO (COLUMNA INFERIOR)
+    // =========================================================================
+    function initNormasSlider() {
+      const slides = document.querySelectorAll('.normas-slide');
+      const dots = document.querySelectorAll('.normas-dot');
+      if (slides.length === 0) return;
+
+      let currentIdx = 1;
+
+      function showNorma(idx) {
+        currentIdx = (idx + slides.length) % slides.length;
+        slides.forEach((s, i) => s.classList.toggle('active', i === currentIdx));
+        dots.forEach((d, i) => d.classList.toggle('active', i === currentIdx));
+      }
+
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => showNorma(i));
+      });
+
+      setInterval(() => {
+        showNorma(currentIdx + 1);
+      }, 40000);
+    }
+
+    // =========================================================================
+    // 4. CARRUSEL COMERCIAL DE PANTALLA COMPLETA (180s RESULTADOS <-> 20s IMAGEN)
+    // =========================================================================
+    let carouselImages = [];
+    let imageMetadata = {};
+    let currentSlide = 0;
+    let currentImageIndex = 0;
+    let isCarouselActive = false;
+
+    const RESULTS_DURATION = 180000;
+    const IMAGE_DISPLAY_DURATION = 20000;
+
+    function arraysEqual(a, b) {
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+
+    async function fetchCarouselImages() {
+      try {
+        const resp = await fetch('/api/carousel-images', { cache: 'no-store' });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (!data || !data.success || !Array.isArray(data.images)) return null;
+
+        if (data.metadata) {
+          Object.keys(data.metadata).forEach((name) => {
+            const newSig = data.metadata[name];
+            if (imageMetadata[name] && imageMetadata[name] !== newSig) {
+              refreshCarouselImage(name);
+            }
+            imageMetadata[name] = newSig;
+          });
+        }
+
+        return data.images.slice().sort();
+      } catch (_e) {
+        return null;
+      }
+    }
+
+    function refreshCarouselImage(imageName) {
+      const slides = document.querySelectorAll('.carousel-slide img');
+      slides.forEach((img) => {
+        const src = img.getAttribute('src') || '';
+        if (src.includes(encodeURIComponent(imageName)) || src.includes(imageName)) {
+          const newSrc = `/img/carousel/${encodeURIComponent(imageName)}?v=${Date.now()}`;
+          const tempImg = new Image();
+          tempImg.onload = function () {
+            img.style.opacity = '0';
+            setTimeout(() => {
+              img.src = newSrc;
+              img.style.opacity = '1';
+            }, 300);
+          };
+          tempImg.src = newSrc;
+        }
+      });
+    }
+
+    function updateCarousel() {
+      const slides = document.querySelectorAll('.carousel-slide');
+      const indicators = document.querySelectorAll('.carousel-indicator');
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === currentSlide));
+      indicators.forEach((ind, idx) => ind.classList.toggle('active', idx === currentSlide));
+    }
+
+    function goToSlide(index) {
+      if (carouselImages.length === 0) return;
+      currentSlide = (index + carouselImages.length) % carouselImages.length;
+      updateCarousel();
+    }
+
+    function createCarouselDOM() {
+      const container = document.getElementById('fullscreen-carousel');
+      if (!container) return;
+      container.innerHTML = '';
+
+      carouselImages.forEach((image, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide' + (index === 0 ? ' active' : '');
+
+        const img = document.createElement('img');
+        img.src = `/img/carousel/${encodeURIComponent(image)}`;
+        img.alt = `Comercial ${index + 1}`;
+        img.loading = 'lazy';
+        img.onerror = function () {
+          this.style.display = 'none';
+        };
+
+        slide.appendChild(img);
+        container.appendChild(slide);
+      });
+
+      const indicatorsContainer = document.createElement('div');
+      indicatorsContainer.className = 'carousel-indicators';
+
+      carouselImages.forEach((_, index) => {
+        const ind = document.createElement('div');
+        ind.className = 'carousel-indicator' + (index === 0 ? ' active' : '');
+        ind.addEventListener('click', () => goToSlide(index));
+        indicatorsContainer.appendChild(ind);
+      });
+
+      container.appendChild(indicatorsContainer);
+    }
+
+    async function showSingleImage() {
+      const updated = await fetchCarouselImages();
+      if (updated && updated.length > 0) {
+        if (!arraysEqual(carouselImages, updated)) {
+          carouselImages = updated;
+          createCarouselDOM();
+          if (currentImageIndex >= carouselImages.length) {
+            currentImageIndex = 0;
+          }
+        }
+      }
+
+      if (carouselImages.length === 0) {
+        showResults();
+        return;
+      }
+
+      document.body.classList.add('show-carousel');
+      isCarouselActive = true;
+      currentSlide = currentImageIndex;
+      updateCarousel();
+
+      setTimeout(() => {
+        currentImageIndex = (currentImageIndex + 1) % carouselImages.length;
+        showResults();
+      }, IMAGE_DISPLAY_DURATION);
+    }
+
+    function showResults() {
+      document.body.classList.remove('show-carousel');
+      isCarouselActive = false;
+
+      setTimeout(() => {
+        showSingleImage();
+      }, RESULTS_DURATION);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (isCarouselActive && carouselImages.length > 0) {
+        if (e.key === 'ArrowLeft') goToSlide(currentSlide - 1);
+        if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
+      }
+    });
+
+    // =========================================================================
+    // INICIALIZACIÓN GENERAL
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      updateFechasLocales(new Date());
+      tickClock();
+      setInterval(tickClock, 1000);
+
+      await syncServerTime();
+      setInterval(syncServerTime, 300000);
+
+      initNormasSlider();
+
+      await obtenerDatosActualizados();
+      setInterval(obtenerDatosActualizados, 30000);
+
+      const initialImages = await fetchCarouselImages();
+      if (initialImages && initialImages.length > 0) {
+        carouselImages = initialImages;
+        createCarouselDOM();
+      }
+
+      setTimeout(() => {
+        showSingleImage();
+      }, RESULTS_DURATION);
+    });
+  })();
+</script>

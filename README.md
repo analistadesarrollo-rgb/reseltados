@@ -1,0 +1,100 @@
+# Sistema de Resultados de Loterías y Sorteos — `resultados_astro`
+
+Reconstrucción técnica completa del sistema de visualización y sincronización de resultados de loterías, sorteos diarios, acumulados, Baloto, Revancha, MiLoto y ColorLOTO, diseñada específicamente para **televisores 16:9 sin scroll** y despliegue de producción mediante **Docker, Nginx y Jenkins**.
+
+## Arquitectura
+
+- **Frontend (`frontend/`)**: Astro 5 compilado de forma estática (`output: 'static'`) y servido mediante **Nginx** con compresión Gzip y caché optimizada para imágenes. Sin React ni frameworks pesados.
+- **Backend (`backend/`)**: API REST en **Node.js 22 + Fastify 5** con pool de conexiones `mysql2/promise`, scraping multi-fuente tolerante a fallos, sincronización atómica hacia la base de datos externa `POWERBI.INFORESULTADOS` y scheduler automático en zona horaria `America/Bogota`.
+- **Infraestructura (raíz)**: `docker-compose.yml`, `nginx.conf`, `Jenkinsfile`, `.env.example`, `.gitignore`, `.dockerignore`.
+
+## Estructura del proyecto
+
+```text
+resultados_astro/
+├── backend/                  # API REST Node.js + Fastify + MySQL2
+│   ├── src/
+│   │   ├── config/           # env.js, db.js (pools main, auth, powerbi)
+│   │   ├── routes/           # health.js, resultados.js, sync.js, admin.js
+│   │   ├── services/         # resultadosService, scraperService, syncPowerBiService, carouselService
+│   │   ├── server.js         # Punto de entrada Fastify (0.0.0.0:3000)
+│   │   └── test-verification.js
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/                 # Aplicación estática Astro 5 optimizada para TV 16:9
+│   ├── public/img/           # Recursos gráficos originales preservados
+│   ├── src/
+│   │   ├── components/       # HeaderBar, LoteriasOficiales, SorteosDiarios, ResumenSemanal, BottomSection, FullscreenCarousel, BoardScripts
+│   │   ├── layouts/          # Layout.astro
+│   │   ├── pages/            # index.astro, androidtv.astro, panel-validacion.astro, admin.astro
+│   │   └── styles/           # global.css (TV 16:9 zero-scroll)
+│   ├── astro.config.mjs
+│   ├── Dockerfile
+│   └── package.json
+├── docs/                     # Documentación técnica completa
+│   ├── INGENIERIA_INVERSA_REA.md
+│   ├── ARQUITECTURA.md
+│   ├── SOLUCION_BD_EXTERNA_POWERBI.md
+│   └── DESPLIEGUE_PRODUCCION.md
+├── docker-compose.yml
+├── nginx.conf
+├── Jenkinsfile
+├── .env.example
+└── README.md
+```
+
+## Rutas disponibles
+
+| Ruta | Descripción |
+|------|-------------|
+| `/` | Pantalla principal de resultados para televisores (16:9 sin scroll, con carrusel automático) |
+| `/androidtv/` | Variante para Android TV con solicitud automática de pantalla completa |
+| `/panel-validacion/` | Panel de validación, diagnóstico de BD, métricas y disparo manual de sincronización |
+| `/admin/` | Panel administrativo para edición manual de acumulados (con sincronización automática a PowerBI) |
+
+## Endpoints del Backend
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/health` y `/api/health` | Healthcheck HTTP (`{"status":"ok"}`) para Docker y Nginx Proxy Manager |
+| `GET` | `/api/health/db` | Diagnóstico de conectividad de BD Principal, Auth y PowerBI |
+| `GET` | `/api/datos?hash=...` | Datos completos del tablero (con detección de cambios por SHA-1) |
+| `GET` | `/api/resultados` | Últimos resultados por código de lotería |
+| `GET` | `/api/time` | Fecha, hora y día de la semana sincronizados en `America/Bogota` |
+| `GET` | `/api/carousel-images` | Listado dinámico de imágenes del carrusel comercial |
+| `GET` | `/api/sync/status` | Estado de la última sincronización y próximo ciclo |
+| `POST` | `/api/sync` | Ejecuta sincronización manual (protegido por `X-Sync-Token`) |
+| `POST` | `/api/admin/login` | Autenticación contra `bdpersona.usuario` (hash MD5 compatible) |
+| `GET` / `PUT` | `/api/admin/acumulados` | Consulta y actualización manual de acumulados + sincronización a `POWERBI.INFORESULTADOS` |
+
+## Ejecución local rápida
+
+1. Configure `.env` a partir de `.env.example`.
+2. Instale dependencias:
+   ```bash
+   npm --prefix backend install
+   npm --prefix frontend install
+   ```
+3. Ejecute el backend (puerto `3000`):
+   ```bash
+   npm --prefix backend start
+   ```
+4. En otra terminal, ejecute el frontend en modo desarrollo (puerto `4321`, con proxy `/api` → `localhost:3000`):
+   ```bash
+   npm --prefix frontend run dev
+   ```
+5. Para generar la compilación estática de producción del frontend:
+   ```bash
+   npm --prefix frontend run build
+   ```
+6. Para ejecutar la suite de verificación real del backend (no destructiva):
+   ```bash
+   npm --prefix backend test
+   ```
+
+## Documentación técnica
+
+- [Ingeniería Inversa con REA y Análisis del Legado](docs/INGENIERIA_INVERSA_REA.md)
+- [Arquitectura del Nuevo Sistema](docs/ARQUITECTURA.md)
+- [Diagnóstico y Solución de la BD Externa (`POWERBI.INFORESULTADOS`)](docs/SOLUCION_BD_EXTERNA_POWERBI.md)
+- [Guía de Despliegue en Producción (Docker, Nginx y Jenkins)](docs/DESPLIEGUE_PRODUCCION.md)

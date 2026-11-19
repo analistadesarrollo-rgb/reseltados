@@ -1,0 +1,146 @@
+---
+interface Props {
+  unitLabel?: string;
+}
+
+const { unitLabel = 'MILL' } = Astro.props;
+
+const normasImages = [
+  { src: '/img/normas/ACCIONES Y VALORES.jpg', alt: 'Acciones y Valores' },
+  { src: '/img/normas/Moneygram (1).jpg', alt: 'MoneyGram' },
+  { src: '/img/normas/seguridad.png', alt: 'Seguridad' },
+  { src: '/img/normas/supergiros.png', alt: 'SuperGIROS' },
+  { src: '/img/normas/tarifas.png', alt: 'Tarifas' },
+  { src: '/img/normas/vueltas.png', alt: 'Vueltas' }
+];
+---
+<div class="container3">
+  <!-- Columna 1: Acumulados Doble Chance 3, 4 y Chance Millonario -->
+  <div class="container-table4">
+    <div class="logo-acum-wrapper">
+      <h1 class="animated heartBeat">
+        <img class="doble3" src="/img/3cifras-doble-chance_0.png" alt="Doble Chance 3 Cifras" />
+      </h1>
+    </div>
+    <div class="table__title3">GANATE</div>
+    <div class="table__item9">
+      <h1 class="animated heartBeat">
+        <div id="acumulado-3cifras-display">$40,1</div>
+      </h1>
+    </div>
+    <div class="table__item10">{unitLabel}</div>
+
+    <div class="logo-acum-wrapper">
+      <h1 class="animated heartBeat">
+        <img class="doble3" src="/img/4cifras-doble-chance_0.png" alt="Doble Chance 4 Cifras" />
+      </h1>
+    </div>
+    <div class="table__title3">GANATE</div>
+    <div class="table__item9">
+      <h1 class="animated heartBeat">
+        <div id="acumulado-4cifras-display">$1.810,4</div>
+      </h1>
+    </div>
+    <div class="table__item10">{unitLabel}</div>
+
+    <div class="logo-acum-wrapper">
+      <h1 class="animated heartBeat">
+        <img class="doble3" src="/img/millonario.png" alt="Chance Millonario" />
+      </h1>
+    </div>
+    <div class="table__title3">GANATE</div>
+    <div class="table__item9">
+      <h1 class="animated heartBeat">
+        <div id="acumulado-chance-display">$2.189,0</div>
+      </h1>
+    </div>
+    <div class="table__item10">{unitLabel}</div>
+  </div>
+
+  <!-- Columna 2: Mini Carrusel Normativo (img/normas) -->
+  <div class="container-table5">
+    <div class="normas-slider" id="normas-slider">
+      {normasImages.map((img, idx) => (
+        <div class={`normas-slide ${idx === 1 ? 'active' : ''}`} data-norma-index={idx}>
+          <img src={img.src} alt={img.alt} />
+        </div>
+      ))}
+    </div>
+    <div class="normas-dots" id="normas-dots">
+      {normasImages.map((_, idx) => (
+        <button
+          type="button"
+          class={`normas-dot ${idx === 1 ? 'active' : ''}`}
+          data-norma-dot={idx}
+          aria-label={`Norma ${idx + 1}`}
+        />
+      ))}
+    </div>
+  </div>
+
+  <!-- Columna 3: Último Sorteo Baloto -->
+  <div class="container-table10">
+    <div class="sorteo">ULTIMO SORTEO</div>
+    <div class="dia_sorteo" id="ultimo-sorteo-dia-semana">MIÉRCOLES</div>
+    <div class="dia-sorteo">
+      <div class="dia" id="ultimo-sorteo-dia-numero">18</div>
+    </div>
+    <div class="mes-sorteo">
+      <b><span id="ultimo-sorteo-mes">Noviembre</span></b>
+    </div>
+    <div class="año-sorteo">
+      <b><span id="ultimo-sorteo-anio">2026</span></b>
+    </div>
+  </div>
+
+  <!-- Columna 4: Baloto y Revancha -->
+  <div class="container-table6">
+    <div class="container-table7">
+      <div>
+        <h1 class="animated heartBeat">
+          <img class="baloto" src="/img/logo-baloto2.png" alt="Baloto" />
+        </h1>
+      </div>
+      <div class="table__item15">GANATE</div>
+      <div class="table__item12">
+        <h1 class="animated heartBeat">
+          <div id="acumulado-baloto-display">$21.600</div>
+        </h1>
+      </div>
+      <div class="table__item10">MILLONES</div>
+    </div>
+
+    <div class="container-table8">
+      <div class="table__item13"><div id="baloto1-display">15</div></div>
+      <div class="table__item13"><div id="baloto2-display">21</div></div>
+      <div class="table__item13"><div id="baloto3-display">33</div></div>
+      <div class="table__item13"><div id="baloto4-display">36</div></div>
+      <div class="table__item13"><div id="baloto5-display">39</div></div>
+      <div class="table__item14"><div id="baloto6-display">03</div></div>
+    </div>
+
+    <div class="container-table7">
+      <div>
+        <h1 class="animated heartBeat">
+          <img class="revancha" src="/img/logo-revancha2.png" alt="Baloto Revancha" />
+        </h1>
+      </div>
+      <div class="table__item15">GANATE</div>
+      <div class="table__item12">
+        <h1 class="animated heartBeat">
+          <div id="acumulado-revancha-display">$2.400</div>
+        </h1>
+      </div>
+      <div class="table__item10">MILLONES</div>
+    </div>
+
+    <div class="container-table8">
+      <div class="table__item13"><div id="revancha1-display">05</div></div>
+      <div class="table__item13"><div id="revancha2-display">09</div></div>
+      <div class="table__item13"><div id="revancha3-display">18</div></div>
+      <div class="table__item13"><div id="revancha4-display">20</div></div>
+      <div class="table__item13"><div id="revancha5-display">34</div></div>
+      <div class="table__item14"><div id="revancha6-display">03</div></div>
+    </div>
+  </div>
+</div>

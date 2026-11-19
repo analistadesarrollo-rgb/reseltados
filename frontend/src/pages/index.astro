@@ -1,0 +1,38 @@
+---
+import BoardScripts from '../components/BoardScripts.astro';
+import BottomSection from '../components/BottomSection.astro';
+import FullscreenCarousel from '../components/FullscreenCarousel.astro';
+import HeaderBar from '../components/HeaderBar.astro';
+import LoteriasOficiales from '../components/LoteriasOficiales.astro';
+import ResumenSemanal from '../components/ResumenSemanal.astro';
+import SorteosDiarios from '../components/SorteosDiarios.astro';
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Resultados">
+  <div class="main-content">
+    <HeaderBar />
+    <hr class="divider" />
+    <LoteriasOficiales />
+    <hr class="divider" />
+
+    <div class="container2-titles">
+      <div class="table__title2">
+        <span class="animated flip">SORTEOS DIARIOS</span>
+      </div>
+      <div class="table__title2">
+        <span class="animated flip">RESUMEN SEMANAL</span>
+      </div>
+    </div>
+
+    <div class="container2-tables">
+      <SorteosDiarios />
+      <ResumenSemanal />
+    </div>
+
+    <hr class="divider" />
+    <BottomSection unitLabel="MILL" />
+  </div>
+
+  <FullscreenCarousel />
+  <BoardScripts />
+</Layout>

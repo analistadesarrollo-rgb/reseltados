@@ -1,0 +1,89 @@
+---
+const rows = [
+  {
+    code: 3,
+    name: 'DORADO M',
+    days: [
+      { key: 'lunes', val: '1187' },
+      { key: 'martes', val: '2820' },
+      { key: 'miercoles', val: '1162' },
+      { key: 'jueves', val: '6909' },
+      { key: 'viernes', val: '0654' },
+      { key: 'sabado', val: '5415' }
+    ]
+  },
+  {
+    code: 1,
+    name: 'CHON M',
+    days: [
+      { key: 'lunes', val: '3022-1' },
+      { key: 'martes', val: '9837-2' },
+      { key: 'miercoles', val: '0639-3' },
+      { key: 'jueves', val: '2127-3' },
+      { key: 'viernes', val: '0065-9' },
+      { key: 'sabado', val: '2953-7' }
+    ]
+  },
+  {
+    code: 2,
+    name: 'PAISITA M',
+    days: [
+      { key: 'lunes', val: '9885' },
+      { key: 'martes', val: '4371' },
+      { key: 'miercoles', val: '2809' },
+      { key: 'jueves', val: '7204' },
+      { key: 'viernes', val: '6333' },
+      { key: 'sabado', val: '0957' }
+    ]
+  },
+  {
+    code: 7,
+    name: 'CAFETE D',
+    days: [
+      { key: 'lunes', val: '7502' },
+      { key: 'martes', val: '4849' },
+      { key: 'miercoles', val: '1417' },
+      { key: 'jueves', val: '5440' },
+      { key: 'viernes', val: '0373' },
+      { key: 'sabado', val: '3303' }
+    ]
+  },
+  {
+    code: 5,
+    name: 'SAMAN D',
+    days: [
+      { key: 'lunes', val: '4056' },
+      { key: 'martes', val: '7430' },
+      { key: 'miercoles', val: '6486' },
+      { key: 'jueves', val: '7923' },
+      { key: 'viernes', val: '3398' },
+      { key: 'sabado', val: '1643' }
+    ]
+  }
+];
+---
+<div class="container-table3">
+  <div></div>
+  <div class="table__item6">LUN.</div>
+  <div class="table__item6">MAR.</div>
+  <div class="table__item6">MIER.</div>
+  <div class="table__item6">JUEV.</div>
+  <div class="table__item6">VIER.</div>
+  <div class="table__item6">SAB.</div>
+
+  {rows.map((row) => (
+    <>
+      <div class="table__item7">{row.name}</div>
+      {row.days.map((d) => (
+        <div class={`cell-resumen ${d.key}`}>
+          <div
+            class={`table__item8 resumen-${row.code}-${d.key}`}
+            id={`resumen-${row.code}-${d.key}`}
+          >
+            {d.val}
+          </div>
+        </div>
+      ))}
+    </>
+  ))}
+</div>
