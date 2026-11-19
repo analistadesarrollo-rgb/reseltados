@@ -75,7 +75,7 @@ const rows = [
 ];
 ---
 <div class="container-table2">
-  <div></div>
+  <div class="table-corner">SORTEO</div>
   <div class="table__item3">MAÑANA</div>
   <div class="table__item3">TARDE</div>
   <div class="table__item3">NOCHE</div>
@@ -86,7 +86,7 @@ const rows = [
       <div class="table__item4">{row.name}</div>
       {row.cells.map((cell) =>
         cell.code === null ? (
-          <div class="table__item5">{cell.val}</div>
+          <div class="table__item5 is-empty">{cell.val}</div>
         ) : (
           <div class="cell-sorteo">
             <div class={`table__item5 sorteo-${cell.code}`}>{cell.val}</div>

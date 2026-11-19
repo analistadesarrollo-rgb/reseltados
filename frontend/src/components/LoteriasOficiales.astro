@@ -36,10 +36,10 @@ const columns = [
   {columns.map((col) => (
     <div class="container-table">
       {col.map((item) => (
-        <>
+        <div class="loteria-row">
           <div class="table__item" id={`label-loteria-${item.code}`}>{item.label}</div>
           <div class="table__item2" id={`resultado-${item.code}`}>{item.defaultVal}</div>
-        </>
+        </div>
       ))}
     </div>
   ))}

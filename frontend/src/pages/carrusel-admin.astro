@@ -8,19 +8,23 @@
     <title>Gestor de Imágenes del Carrusel - Resultados</title>
     <style is:global>
       :root {
-        --bg: #f1f5f9;
+        --bg: #eef2f7;
         --surface: #ffffff;
-        --border: #e2e8f0;
+        --surface-soft: #f8fafc;
+        --border: #dce3ee;
+        --navy: #061b4e;
         --primary: #0d47a1;
         --primary-hover: #1565c0;
+        --gold: #f8bb02;
+        --gold-soft: #fef3c7;
         --danger: #dc2626;
         --danger-hover: #b91c1c;
-        --warning-bg: #fef3c7;
-        --warning-text: #92400e;
         --success-bg: #dcfce7;
         --success-text: #166534;
         --error-bg: #fee2e2;
         --error-text: #991b1b;
+        --warning-bg: #fef3c7;
+        --warning-text: #92400e;
         --text: #0f172a;
         --muted: #64748b;
       }
@@ -31,46 +35,65 @@
 
       body {
         margin: 0;
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
         background: var(--bg);
         color: var(--text);
         min-height: 100vh;
       }
 
-      /* Vista Login */
+      /* ===================== VISTA LOGIN ===================== */
       .login-shell {
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 20px;
-        background: linear-gradient(135deg, #0b2a5b 0%, #1565c0 100%);
+        padding: 24px 16px;
+        background:
+          radial-gradient(circle at 20% 20%, rgba(248, 187, 2, 0.14) 0%, transparent 45%),
+          radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.15) 0%, transparent 45%),
+          linear-gradient(135deg, #041236 0%, #0d47a1 55%, #072262 100%);
       }
 
       .login-card {
         width: 100%;
-        max-width: 420px;
-        background: var(--surface);
-        border-radius: 16px;
-        padding: 32px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        max-width: 430px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-top: 4px solid var(--gold);
+        border-radius: 18px;
+        padding: 34px 32px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+      }
+
+      .login-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #061b4e 0%, #0d47a1 100%);
+        color: #fde047;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 14px;
+        box-shadow: 0 8px 18px rgba(13, 71, 161, 0.28);
       }
 
       .login-badge {
         display: inline-block;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.4px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.7px;
         background: #dbeafe;
         color: #1e40af;
         padding: 4px 10px;
         border-radius: 999px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
 
       .login-card h1 {
         margin: 0 0 8px;
-        font-size: 22px;
+        font-size: 24px;
+        font-weight: 800;
         color: var(--text);
       }
 
@@ -78,7 +101,7 @@
         margin: 0 0 22px;
         color: var(--muted);
         font-size: 14px;
-        line-height: 1.45;
+        line-height: 1.5;
       }
 
       .form-group {
@@ -87,25 +110,53 @@
 
       .form-group label {
         display: block;
-        font-size: 14px;
-        font-weight: 600;
+        font-size: 13px;
+        font-weight: 700;
         margin-bottom: 6px;
         color: #334155;
+      }
+
+      .input-wrap {
+        position: relative;
       }
 
       .form-group input {
         width: 100%;
         padding: 11px 13px;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 10px;
         font-size: 15px;
         outline: none;
+        background: #ffffff;
+        color: var(--text);
         transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .input-wrap input {
+        padding-right: 44px;
       }
 
       .form-group input:focus {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.14);
+      }
+
+      .toggle-eye {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        padding: 4px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .toggle-eye:hover {
+        color: var(--primary);
       }
 
       .btn {
@@ -114,12 +165,13 @@
         justify-content: center;
         gap: 8px;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         padding: 10px 18px;
         font-size: 14px;
         font-weight: 700;
         cursor: pointer;
-        transition: background 0.2s, transform 0.1s, opacity 0.2s;
+        transition: all 0.18s ease;
+        white-space: nowrap;
       }
 
       .btn:disabled {
@@ -128,12 +180,14 @@
       }
 
       .btn-primary {
-        background: var(--primary);
+        background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
         color: #ffffff;
+        box-shadow: 0 4px 12px rgba(13, 71, 161, 0.24);
       }
 
       .btn-primary:hover:not(:disabled) {
-        background: var(--primary-hover);
+        background: linear-gradient(135deg, #0a3882 0%, #0d47a1 100%);
+        transform: translateY(-1px);
       }
 
       .btn-secondary {
@@ -145,6 +199,16 @@
         background: #cbd5e1;
       }
 
+      .btn-glass {
+        background: rgba(255, 255, 255, 0.14);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .btn-glass:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.24);
+      }
+
       .btn-danger {
         background: var(--danger);
         color: #ffffff;
@@ -154,10 +218,15 @@
         background: var(--danger-hover);
       }
 
+      .btn-sm {
+        padding: 7px 13px;
+        font-size: 13px;
+      }
+
       .alert {
         display: none;
-        padding: 12px 14px;
-        border-radius: 8px;
+        padding: 12px 16px;
+        border-radius: 10px;
         font-size: 14px;
         font-weight: 600;
         margin-bottom: 16px;
@@ -170,49 +239,54 @@
       .alert-error {
         background: var(--error-bg);
         color: var(--error-text);
+        border: 1px solid #fecaca;
       }
 
       .alert-success {
         background: var(--success-bg);
         color: var(--success-text);
+        border: 1px solid #bbf7d0;
       }
 
       .alert-warning {
         background: var(--warning-bg);
         color: var(--warning-text);
+        border: 1px solid #fde68a;
       }
 
-      /* Panel Principal */
+      /* ===================== PANEL PRINCIPAL ===================== */
       .panel-shell {
         display: none;
-        max-width: 1240px;
+        max-width: 1280px;
         margin: 0 auto;
-        padding: 24px 18px 48px;
+        padding: 22px 18px 52px;
       }
 
       .topbar {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 18px 22px;
+        background: linear-gradient(135deg, #061b4e 0%, #0d47a1 100%);
+        border-bottom: 3px solid var(--gold);
+        border-radius: 16px;
+        padding: 20px 24px;
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
-        gap: 14px;
+        gap: 16px;
         margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        color: #ffffff;
+        box-shadow: 0 12px 28px rgba(6, 27, 78, 0.22);
       }
 
       .topbar-title h1 {
-        margin: 0 0 4px;
+        margin: 0 0 6px;
         font-size: 22px;
-        color: var(--primary);
+        font-weight: 800;
+        color: #ffffff;
       }
 
       .topbar-meta {
         font-size: 13px;
-        color: var(--muted);
+        color: #dbeafe;
         display: flex;
         align-items: center;
         flex-wrap: wrap;
@@ -220,11 +294,13 @@
       }
 
       .role-pill {
-        background: #dbeafe;
-        color: #1e40af;
-        font-weight: 700;
-        font-size: 12px;
-        padding: 2px 9px;
+        background: rgba(248, 187, 2, 0.2);
+        color: #fde047;
+        border: 1px solid rgba(253, 224, 71, 0.5);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        padding: 3px 10px;
         border-radius: 999px;
       }
 
@@ -236,9 +312,10 @@
 
       .password-banner {
         display: none;
-        background: var(--warning-bg);
-        border: 1px solid #fcd34d;
-        color: var(--warning-text);
+        background: #fffbeb;
+        border: 1px solid #f59e0b;
+        border-left: 5px solid #f59e0b;
+        color: #78350f;
         border-radius: 12px;
         padding: 14px 18px;
         margin-bottom: 20px;
@@ -246,6 +323,7 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
       }
 
       .password-banner.show {
@@ -255,46 +333,57 @@
       .card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 22px;
+        border-radius: 16px;
+        padding: 22px 24px;
         margin-bottom: 22px;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
       }
 
       .card h2 {
-        margin: 0 0 12px;
+        margin: 0 0 14px;
         font-size: 18px;
-        color: var(--text);
+        font-weight: 800;
+        color: var(--navy);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .dropzone {
-        border: 2px dashed #94a3b8;
-        border-radius: 12px;
-        padding: 28px 18px;
+        border: 2px dashed #93c5fd;
+        border-radius: 14px;
+        padding: 30px 18px;
         text-align: center;
-        background: #f8fafc;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
         cursor: pointer;
-        transition: border-color 0.2s, background 0.2s;
+        transition: all 0.2s ease;
       }
 
+      .dropzone:hover,
       .dropzone.dragover {
         border-color: var(--primary);
         background: #eff6ff;
+        transform: translateY(-1px);
+      }
+
+      .dropzone-icon {
+        color: var(--primary);
+        margin-bottom: 8px;
       }
 
       .dropzone-hint {
         color: var(--muted);
         font-size: 13px;
-        margin-top: 8px;
+        margin-top: 6px;
       }
 
       .upload-preview {
         display: none;
         margin-top: 16px;
-        padding: 14px;
-        background: #f8fafc;
+        padding: 14px 16px;
+        background: var(--surface-soft);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: 12px;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
@@ -312,12 +401,12 @@
       }
 
       .upload-preview img {
-        width: 96px;
-        height: 60px;
+        width: 112px;
+        height: 68px;
         object-fit: cover;
         border-radius: 8px;
         border: 1px solid var(--border);
-        background: #ffffff;
+        background: #0f172a;
       }
 
       .gallery-header {
@@ -325,22 +414,66 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .gallery-tools {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
         gap: 10px;
-        margin-bottom: 16px;
+      }
+
+      .search-box {
+        position: relative;
+      }
+
+      .search-box input {
+        padding: 8px 12px 8px 34px;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        font-size: 13px;
+        width: 220px;
+        outline: none;
+        transition: border-color 0.2s, width 0.2s;
+      }
+
+      .search-box input:focus {
+        border-color: var(--primary);
+        width: 250px;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        pointer-events: none;
       }
 
       .count-badge {
-        background: #e2e8f0;
-        color: #1e293b;
-        font-weight: 700;
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: 800;
         font-size: 13px;
-        padding: 4px 12px;
+        padding: 5px 12px;
+        border-radius: 999px;
+      }
+
+      .size-badge {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 5px 11px;
         border-radius: 999px;
       }
 
       .gallery-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: 18px;
       }
 
@@ -348,23 +481,24 @@
         min-width: 0;
         width: 100%;
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
         background: #ffffff;
         display: flex;
         flex-direction: column;
-        transition: transform 0.15s, box-shadow 0.15s;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
       }
 
       .img-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+        border-color: #93c5fd;
       }
 
       .img-thumb-wrap {
         position: relative;
         width: 100%;
-        height: 160px;
+        height: 162px;
         background: #0f172a;
         overflow: hidden;
         cursor: zoom-in;
@@ -376,10 +510,33 @@
         max-width: 100%;
         object-fit: cover;
         display: block;
+        transition: transform 0.25s ease;
+      }
+
+      .img-card:hover .img-thumb-wrap img {
+        transform: scale(1.03);
+      }
+
+      .img-zoom-hint {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 999px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .img-thumb-wrap:hover .img-zoom-hint {
+        opacity: 1;
       }
 
       .img-body {
-        padding: 13px;
+        padding: 14px;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -391,6 +548,7 @@
         font-weight: 700;
         color: var(--text);
         word-break: break-word;
+        line-height: 1.35;
       }
 
       .img-meta {
@@ -401,14 +559,22 @@
         gap: 8px;
       }
 
+      .ext-pill {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 6px;
+      }
+
       .tag-protected {
         display: inline-block;
         font-size: 11px;
         font-weight: 700;
         background: var(--warning-bg);
         color: var(--warning-text);
-        padding: 2px 8px;
-        border-radius: 6px;
+        padding: 3px 9px;
+        border-radius: 999px;
         align-self: flex-start;
       }
 
@@ -420,11 +586,13 @@
       }
 
       .empty-state {
+        grid-column: 1 / -1;
         text-align: center;
-        padding: 36px 16px;
+        padding: 40px 16px;
         color: var(--muted);
         border: 1px dashed var(--border);
-        border-radius: 10px;
+        border-radius: 12px;
+        background: #f8fafc;
       }
 
       /* Modales */
@@ -432,7 +600,8 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, 0.65);
+        background: rgba(2, 6, 23, 0.72);
+        backdrop-filter: blur(4px);
         z-index: 1000;
         align-items: center;
         justify-content: center;
@@ -447,14 +616,15 @@
         width: 100%;
         max-width: 460px;
         background: var(--surface);
-        border-radius: 14px;
+        border-radius: 16px;
         padding: 24px;
-        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
       }
 
       .modal-card h3 {
         margin: 0 0 10px;
         font-size: 19px;
+        color: var(--text);
       }
 
       .modal-actions {
@@ -466,18 +636,18 @@
 
       .modal-delete-preview {
         width: 100%;
-        max-height: 200px;
+        max-height: 210px;
         object-fit: contain;
         background: #0f172a;
-        border-radius: 8px;
+        border-radius: 10px;
         margin: 10px 0;
       }
 
       .lightbox-img {
         max-width: 90vw;
         max-height: 82vh;
-        border-radius: 10px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        border-radius: 12px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
       }
     </style>
   </head>
@@ -485,10 +655,18 @@
     <!-- Pantalla de Inicio de Sesión Independiente -->
     <main id="login-view" class="login-shell">
       <section class="login-card" aria-label="Inicio de sesión gestor de carrusel">
-        <span class="login-badge">ACCESO RESTRINGIDO · CARRUSEL</span>
+        <div class="login-icon-wrap" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        </div>
+        <br />
+        <span class="login-badge">ACCESO RESTRINGIDO · CARRUSEL TV</span>
         <h1>Administrador de Imágenes</h1>
         <p>
-          Inicia sesión para visualizar, agregar o eliminar las imágenes promocionales del carrusel público de
+          Inicia sesión para visualizar, agregar o eliminar las imágenes promocionales del carrusel público en los
           televisores.
         </p>
 
@@ -501,9 +679,17 @@
           </div>
           <div class="form-group">
             <label for="login-password">Contraseña</label>
-            <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+            <div class="input-wrap">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+              <button type="button" id="toggle-login-pass" class="toggle-eye" aria-label="Mostrar u ocultar contraseña">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <button id="btn-login" type="submit" class="btn btn-primary" style="width: 100%;">
+          <button id="btn-login" type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
             Ingresar al Gestor de Carrusel
           </button>
         </form>
@@ -518,12 +704,12 @@
           <div class="topbar-meta">
             <span>Usuario: <strong id="meta-username">admin</strong></span>
             <span class="role-pill" id="meta-role">GESTOR_CARRUSEL</span>
-            <span>Solo administración de imágenes públicas</span>
+            <span>Cambios reflejados automáticamente en televisores</span>
           </div>
         </div>
         <div class="topbar-actions">
-          <button type="button" id="btn-open-password" class="btn btn-secondary">Cambiar contraseña</button>
-          <button type="button" id="btn-refresh" class="btn btn-secondary">Actualizar galería</button>
+          <button type="button" id="btn-open-password" class="btn btn-glass">Cambiar contraseña</button>
+          <button type="button" id="btn-refresh" class="btn btn-glass">Actualizar galería</button>
           <button type="button" id="btn-logout" class="btn btn-danger">Cerrar sesión</button>
         </div>
       </header>
@@ -533,25 +719,35 @@
           <strong>Recomendación de seguridad:</strong> Estás usando la contraseña inicial. Cámbiala para proteger el
           acceso al carrusel.
         </div>
-        <button type="button" id="btn-banner-password" class="btn btn-primary">Cambiar contraseña ahora</button>
+        <button type="button" id="btn-banner-password" class="btn btn-primary btn-sm">Cambiar contraseña ahora</button>
       </div>
 
       <div id="panel-alert" class="alert" role="status"></div>
 
       <!-- Subir nueva imagen -->
       <section class="card" aria-label="Agregar nueva imagen">
-        <h2>Agregar nueva imagen al carrusel</h2>
+        <h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Agregar nueva imagen al carrusel
+        </h2>
         <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Seleccionar o arrastrar imagen">
+          <div class="dropzone-icon" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="M21 15l-5-5L5 21" />
+            </svg>
+          </div>
           <strong>Haz clic para seleccionar una imagen o arrástrala aquí</strong>
           <div class="dropzone-hint">
-            Formatos permitidos: JPG, JPEG, PNG, WEBP, GIF · Tamaño máximo: <span id="max-size-label">10 MB</span>
+            Formatos permitidos: JPG, JPEG, PNG, WEBP, GIF · Tamaño máximo: <span id="max-size-label">10 MB</span> ·
+            Recomendado 16:9 Full HD
           </div>
-          <input
-            id="file-input"
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,.gif"
-            style="display: none;"
-          />
+          <input id="file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.gif" style="display: none;" />
         </div>
 
         <div id="upload-preview" class="upload-preview">
@@ -560,6 +756,7 @@
             <div>
               <div id="preview-name" style="font-weight: 700;"></div>
               <div id="preview-size" style="font-size: 13px; color: #64748b;"></div>
+              <div id="preview-dims" style="font-size: 12px; color: #0d47a1; font-weight: 600;"></div>
             </div>
           </div>
           <div style="display: flex; gap: 10px;">
@@ -573,7 +770,17 @@
       <section class="card" aria-label="Galería actual del carrusel">
         <div class="gallery-header">
           <h2 style="margin: 0;">Imágenes activas en el carrusel</h2>
-          <span id="gallery-count" class="count-badge">0 imágenes</span>
+          <div class="gallery-tools">
+            <div class="search-box">
+              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input id="gallery-search" type="search" placeholder="Buscar por nombre..." aria-label="Buscar imagen por nombre" />
+            </div>
+            <span id="gallery-total-size" class="size-badge">0 MB</span>
+            <span id="gallery-count" class="count-badge">0 imágenes</span>
+          </div>
         </div>
         <div id="gallery-container" class="gallery-grid"></div>
       </section>
@@ -625,7 +832,7 @@
     <div id="lightbox-modal" class="modal-backdrop" role="dialog" aria-modal="true">
       <div style="text-align: center;">
         <img id="lightbox-img" class="lightbox-img" alt="Vista ampliada" />
-        <div id="lightbox-caption" style="color: #fff; margin-top: 10px; font-weight: 600;"></div>
+        <div id="lightbox-caption" style="color: #fff; margin-top: 12px; font-weight: 600;"></div>
       </div>
     </div>
 
@@ -637,6 +844,7 @@
         let previewObjectUrl = null;
         let pendingDeleteFilename = null;
         let maxFileSizeBytes = 10 * 1024 * 1024;
+        let allImages = [];
 
         const loginView = document.getElementById('login-view');
         const panelView = document.getElementById('panel-view');
@@ -650,10 +858,13 @@
         const previewImg = document.getElementById('preview-img');
         const previewName = document.getElementById('preview-name');
         const previewSize = document.getElementById('preview-size');
+        const previewDims = document.getElementById('preview-dims');
         const btnUpload = document.getElementById('btn-upload');
 
         const galleryContainer = document.getElementById('gallery-container');
         const galleryCount = document.getElementById('gallery-count');
+        const galleryTotalSize = document.getElementById('gallery-total-size');
+        const gallerySearch = document.getElementById('gallery-search');
 
         const deleteModal = document.getElementById('delete-modal');
         const deleteModalImg = document.getElementById('delete-modal-img');
@@ -667,6 +878,11 @@
         const lightboxModal = document.getElementById('lightbox-modal');
         const lightboxImg = document.getElementById('lightbox-img');
         const lightboxCaption = document.getElementById('lightbox-caption');
+
+        document.getElementById('toggle-login-pass')?.addEventListener('click', () => {
+          const inp = document.getElementById('login-password');
+          if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+        });
 
         function showAlert(el, msg, type = 'success') {
           if (!el) return;
@@ -712,6 +928,7 @@
         function showLoginUI() {
           currentUser = null;
           csrfToken = '';
+          allImages = [];
           panelView.style.display = 'none';
           loginView.style.display = 'flex';
           galleryContainer.innerHTML = '';
@@ -724,6 +941,7 @@
             previewObjectUrl = null;
           }
           fileInput.value = '';
+          previewDims.textContent = '';
           uploadPreview.classList.remove('show');
         }
 
@@ -755,6 +973,11 @@
           selectedFile = file;
           if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
           previewObjectUrl = URL.createObjectURL(file);
+          previewImg.onload = () => {
+            if (previewImg.naturalWidth && previewImg.naturalHeight) {
+              previewDims.textContent = `Resolución detectada: ${previewImg.naturalWidth} × ${previewImg.naturalHeight} px`;
+            }
+          };
           previewImg.src = previewObjectUrl;
           previewName.textContent = file.name;
           previewSize.textContent = formatBytes(file.size);
@@ -762,18 +985,27 @@
         }
 
         function renderGallery(images) {
+          const query = String(gallerySearch?.value || '').trim().toLowerCase();
+          const filtered = query
+            ? images.filter((item) => item.filename.toLowerCase().includes(query))
+            : images;
+
           galleryContainer.innerHTML = '';
           galleryCount.textContent = `${images.length} ${images.length === 1 ? 'imagen' : 'imágenes'}`;
+          const totalBytes = images.reduce((acc, it) => acc + (Number(it.sizeBytes) || 0), 0);
+          galleryTotalSize.textContent = `Total: ${formatBytes(totalBytes)}`;
 
-          if (!images || images.length === 0) {
+          if (!filtered || filtered.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'empty-state';
-            empty.textContent = 'No hay imágenes en el carrusel. Agrega una imagen usando el formulario superior.';
+            empty.textContent = query
+              ? `No se encontraron imágenes que coincidan con "${query}".`
+              : 'No hay imágenes en el carrusel. Agrega una imagen usando el formulario superior.';
             galleryContainer.appendChild(empty);
             return;
           }
 
-          images.forEach((item) => {
+          filtered.forEach((item) => {
             const card = document.createElement('article');
             card.className = 'img-card';
 
@@ -787,6 +1019,11 @@
             img.alt = item.filename;
             img.loading = 'lazy';
             thumbWrap.appendChild(img);
+
+            const zoomHint = document.createElement('span');
+            zoomHint.className = 'img-zoom-hint';
+            zoomHint.textContent = 'Ampliar';
+            thumbWrap.appendChild(zoomHint);
 
             thumbWrap.addEventListener('click', () => {
               lightboxImg.src = img.src;
@@ -804,11 +1041,16 @@
 
             const metaEl = document.createElement('div');
             metaEl.className = 'img-meta';
-            const sizeSpan = document.createElement('span');
-            sizeSpan.textContent = `${String(item.ext || '').toUpperCase()} · ${formatBytes(item.sizeBytes)}`;
+            const leftSpan = document.createElement('span');
+            const extPill = document.createElement('span');
+            extPill.className = 'ext-pill';
+            extPill.textContent = String(item.ext || '').toUpperCase();
+            leftSpan.appendChild(extPill);
+            leftSpan.appendChild(document.createTextNode(` · ${formatBytes(item.sizeBytes)}`));
+
             const dateSpan = document.createElement('span');
             dateSpan.textContent = formatDate(item.updatedAt);
-            metaEl.appendChild(sizeSpan);
+            metaEl.appendChild(leftSpan);
             metaEl.appendChild(dateSpan);
             body.appendChild(metaEl);
 
@@ -824,7 +1066,7 @@
 
             const delBtn = document.createElement('button');
             delBtn.type = 'button';
-            delBtn.className = 'btn btn-danger';
+            delBtn.className = 'btn btn-danger btn-sm';
             delBtn.textContent = 'Eliminar';
             delBtn.addEventListener('click', () => {
               pendingDeleteFilename = item.filename;
@@ -860,7 +1102,8 @@
           }
 
           if (data.success) {
-            renderGallery(data.images || []);
+            allImages = data.images || [];
+            renderGallery(allImages);
           } else {
             showAlert(panelAlert, data.error || 'Error cargando la galería.', 'error');
           }
@@ -889,7 +1132,8 @@
           }
         }
 
-        // Eventos Login
+        gallerySearch?.addEventListener('input', () => renderGallery(allImages));
+
         document.getElementById('login-form')?.addEventListener('submit', async (e) => {
           e.preventDefault();
           hideAlert(loginAlert);
@@ -926,7 +1170,6 @@
           }
         });
 
-        // Logout
         document.getElementById('btn-logout')?.addEventListener('click', async () => {
           try {
             await fetch('/api/carousel-admin/logout', {
@@ -940,7 +1183,6 @@
           }
         });
 
-        // Dropzone y selección de archivo
         dropzone?.addEventListener('click', () => fileInput.click());
         dropzone?.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -967,7 +1209,6 @@
 
         document.getElementById('btn-cancel-upload')?.addEventListener('click', clearUploadSelection);
 
-        // Subir imagen
         btnUpload?.addEventListener('click', async () => {
           if (!selectedFile) return;
           hideAlert(panelAlert);
@@ -1002,14 +1243,12 @@
           }
         });
 
-        // Refrescar galería
         document.getElementById('btn-refresh')?.addEventListener('click', async () => {
           hideAlert(panelAlert);
           await loadGallery();
           showAlert(panelAlert, 'Galería actualizada.', 'success');
         });
 
-        // Confirmación de borrado
         document.getElementById('btn-cancel-delete')?.addEventListener('click', () => {
           pendingDeleteFilename = null;
           deleteModal.classList.remove('show');
@@ -1049,7 +1288,6 @@
           }
         });
 
-        // Cambio de contraseña
         function openPasswordModal() {
           hideAlert(pwdAlert);
           passwordForm.reset();
@@ -1107,9 +1345,14 @@
           }
         });
 
-        // Cerrar lightbox al hacer clic fuera
-        lightboxModal?.addEventListener('click', () => {
-          lightboxModal.classList.remove('show');
+        lightboxModal?.addEventListener('click', () => lightboxModal.classList.remove('show'));
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            lightboxModal.classList.remove('show');
+            deleteModal.classList.remove('show');
+            passwordModal.classList.remove('show');
+            pendingDeleteFilename = null;
+          }
         });
 
         document.addEventListener('DOMContentLoaded', checkExistingSession);
