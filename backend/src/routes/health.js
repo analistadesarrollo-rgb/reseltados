@@ -1,5 +1,6 @@
 import { checkDatabasesHealth } from '../config/db.js';
 import { getBogotaDateParts } from '../config/env.js';
+import { getEtlStatus, getOracleSourceDiagnostics } from '../services/etlResultadosService.js';
 import { getSyncStatus } from '../services/syncPowerBiService.js';
 
 export async function healthRoutes(fastify) {
@@ -12,6 +13,8 @@ export async function healthRoutes(fastify) {
     reply.header('Cache-Control', 'no-store');
     const dbs = await checkDatabasesHealth();
     const sync = getSyncStatus();
+    const etl = getEtlStatus();
+    const oracleDiag = getOracleSourceDiagnostics();
     const bogota = getBogotaDateParts();
 
     const allHealthy = dbs.mainDb.available && dbs.powerBiDb.available;
@@ -21,7 +24,8 @@ export async function healthRoutes(fastify) {
       serverTime: bogota.isoDateTime,
       dependencies: {
         mainDatabase: dbs.mainDb,
-        externalPowerBiDatabase: dbs.powerBiDb
+        externalPowerBiDatabase: dbs.powerBiDb,
+        oracleEtlSource: oracleDiag
       },
       sync: {
         inProgress: sync.inProgress,
@@ -34,6 +38,21 @@ export async function healthRoutes(fastify) {
         powerBiPendingRetry: sync.powerBiPendingRetry,
         lastPowerBiSyncedCount: sync.powerBiSyncedCount,
         databases: sync.databases
+      },
+      etl: {
+        enabled: etl.enabled,
+        inProgress: etl.inProgress,
+        schedule: etl.schedule,
+        sourceMode: etl.sourceMode,
+        sourceUsed: etl.sourceUsed,
+        lastRunAt: etl.lastRunAt,
+        lastSuccessAt: etl.lastSuccessAt,
+        lastCompletedSlotKey: etl.lastCompletedSlotKey,
+        nextScheduledAt: etl.nextScheduledAt,
+        lastStatus: etl.status,
+        rowsExtracted: etl.rowsExtracted,
+        rowsUpserted: etl.rowsUpserted,
+        durationMs: etl.durationMs
       }
     };
   };

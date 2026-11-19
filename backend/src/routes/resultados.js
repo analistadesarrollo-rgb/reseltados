@@ -1,5 +1,6 @@
 import { getBogotaDateParts } from '../config/env.js';
 import { listarImagenesCarrusel } from '../services/carouselService.js';
+import { evaluarYEjecutarEtlSiCorresponde } from '../services/etlResultadosService.js';
 import {
   getFechasTablero,
   obtenerDatosCompletos,
@@ -19,12 +20,19 @@ export async function resultadosRoutes(fastify) {
     setNoCacheHeaders(reply);
 
     let syncCheck = null;
+    let etlCheck = null;
     if (request.query?.checkSync === '1') {
       try {
-        syncCheck = await evaluarYEjecutarSincronizacionSiCorresponde({
-          trigger: 'public_visit',
-          blocking: false
-        });
+        [syncCheck, etlCheck] = await Promise.all([
+          evaluarYEjecutarSincronizacionSiCorresponde({
+            trigger: 'public_visit',
+            blocking: false
+          }),
+          evaluarYEjecutarEtlSiCorresponde({
+            trigger: 'public_visit',
+            blocking: false
+          })
+        ]);
       } catch {
         // Nunca bloquear la carga del tablero si falla la evaluación automática
       }
@@ -41,13 +49,15 @@ export async function resultadosRoutes(fastify) {
         fechas: result.fechas,
         timestamp: result.timestamp,
         fecha_consulta: result.fecha_consulta,
-        ...(syncCheck ? { syncCheck } : {})
+        ...(syncCheck ? { syncCheck } : {}),
+        ...(etlCheck ? { etlCheck } : {})
       };
     }
 
     return {
       ...result,
-      ...(syncCheck ? { syncCheck } : {})
+      ...(syncCheck ? { syncCheck } : {}),
+      ...(etlCheck ? { etlCheck } : {})
     };
   };
 

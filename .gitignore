@@ -24,6 +24,10 @@ tmp_*.html
 backend/data/
 data/
 
+# Oracle Instant Client copiado en tiempo de build por Jenkins (NUNCA versionar binarios)
+backend/instantclient_11_2/*
+!backend/instantclient_11_2/.gitkeep
+
 # Sistema operativo y editores
 .DS_Store
 Thumbs.db

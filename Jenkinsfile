@@ -40,6 +40,23 @@ pipeline {
       }
     }
 
+    stage('Prepare Oracle Instant Client (11.2)') {
+      steps {
+        script {
+          sh '''
+            mkdir -p ./backend/instantclient_11_2
+            if [ -d "/var/lib/jenkins/instantclient_11_2" ]; then
+              rm -rf ./backend/instantclient_11_2/*
+              cp -rf /var/lib/jenkins/instantclient_11_2/. ./backend/instantclient_11_2/
+              echo "Oracle Instant Client 11.2 copiado correctamente desde /var/lib/jenkins/instantclient_11_2."
+            else
+              echo "ADVERTENCIA: /var/lib/jenkins/instantclient_11_2 no encontrado; el ETL operará con respaldo API interna."
+            fi
+          '''
+        }
+      }
+    }
+
     stage('Build Docker Images (Frontend & Backend)') {
       steps {
         script {
@@ -76,8 +93,9 @@ pipeline {
             docker ps --filter "name=${API_CONTAINER}" --filter "status=running" | grep ${API_CONTAINER}
             docker ps --filter "name=${WEB_CONTAINER}" --filter "status=running" | grep ${WEB_CONTAINER}
 
-            # Verificar endpoint /health internamente en el contenedor backend
+            # Verificar endpoint /health y /etl/status internamente en el contenedor backend
             docker exec ${API_CONTAINER} node -e "fetch('http://127.0.0.1:3000/health').then(r=>r.json()).then(d=>{console.log('Health API:', JSON.stringify(d)); if(d.status!=='ok') process.exit(1);}).catch(e=>{console.error(e); process.exit(1);})"
+            docker exec ${API_CONTAINER} node -e "fetch('http://127.0.0.1:3000/api/etl/status').then(r=>r.json()).then(d=>{console.log('ETL Loterias:', JSON.stringify({schedule: d.schedule, oracleClientReady: d.oracleClientReady, oracleConfigured: d.oracleConfigured, sourceMode: d.sourceMode, nextScheduledAt: d.nextScheduledAt}));}).catch(e=>{console.error(e); process.exit(1);})"
 
             # Verificar volúmenes persistentes compartidos entre backend y frontend
             docker exec ${API_CONTAINER} sh -c "test -w /app/carousel && test -w /app/data && ls -1 /app/carousel | wc -l"

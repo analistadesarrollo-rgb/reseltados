@@ -12,6 +12,10 @@ import { syncRoutes } from './routes/sync.js';
 import { initCarouselAuthStore } from './services/carouselAuthService.js';
 import { seedCarouselIfNeeded } from './services/carouselService.js';
 import {
+  evaluarYEjecutarEtlSiCorresponde,
+  initEtlState
+} from './services/etlResultadosService.js';
+import {
   evaluarYEjecutarSincronizacionSiCorresponde,
   initSyncState
 } from './services/syncPowerBiService.js';
@@ -60,10 +64,11 @@ export async function buildServer() {
 let autoSyncTimer = null;
 
 async function startServer() {
-  // Inicialización idempotente de almacenamiento persistente, usuario GESTOR_CARRUSEL y estado de sync
+  // Inicialización idempotente de almacenamiento persistente, usuario GESTOR_CARRUSEL, estado de sync y ETL
   await seedCarouselIfNeeded();
   await initCarouselAuthStore();
   await initSyncState();
+  await initEtlState();
 
   const fastify = await buildServer();
 
@@ -91,42 +96,80 @@ async function startServer() {
     `Servidor resultados-astro-api escuchando en http://${env.host}:${env.port} (TZ=${env.tz}, Hora=${bogota.isoDateTime})`
   );
 
-  // Planificador central en el backend (independiente del navegador; evalúa intervalos en America/Bogota)
-  if (env.sync.autoSyncEnabled) {
-    if (env.sync.autoSyncOnStartup) {
-      setTimeout(() => {
-        evaluarYEjecutarSincronizacionSiCorresponde({
-          trigger: 'startup',
-          blocking: true
-        })
-          .then((res) => {
-            fastify.log.info(
-              { triggered: res.triggered, status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
-              'Evaluación inicial de sincronización completada'
-            );
-          })
-          .catch((err) => {
-            fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en evaluación inicial de sincronización');
-          });
-      }, 3000);
-    }
-
-    autoSyncTimer = setInterval(() => {
+  // Planificadores centrales en el backend (independientes del navegador; evalúan intervalos en America/Bogota)
+  if (env.sync.autoSyncEnabled && env.sync.autoSyncOnStartup) {
+    setTimeout(() => {
       evaluarYEjecutarSincronizacionSiCorresponde({
-        trigger: 'scheduler',
+        trigger: 'startup',
         blocking: true
       })
         .then((res) => {
-          if (res.triggered) {
-            fastify.log.info(
-              { status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
-              'Sincronización programada completada'
-            );
-          }
+          fastify.log.info(
+            { triggered: res.triggered, status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
+            'Evaluación inicial de sincronización completada'
+          );
         })
         .catch((err) => {
-          fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en sincronización programada');
+          fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en evaluación inicial de sincronización');
         });
+    }, 3000);
+  }
+
+  if (env.etl.enabled && env.etl.onStartup) {
+    setTimeout(() => {
+      evaluarYEjecutarEtlSiCorresponde({
+        trigger: 'startup',
+        blocking: true
+      })
+        .then((res) => {
+          fastify.log.info(
+            { triggered: res.triggered, status: res.status, sourceUsed: res.sourceUsed, rowsUpserted: res.rowsUpserted },
+            'Evaluación inicial de ETL de loterías completada'
+          );
+        })
+        .catch((err) => {
+          fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en evaluación inicial de ETL de loterías');
+        });
+    }, 4500);
+  }
+
+  if (env.sync.autoSyncEnabled || env.etl.enabled) {
+    autoSyncTimer = setInterval(() => {
+      if (env.sync.autoSyncEnabled) {
+        evaluarYEjecutarSincronizacionSiCorresponde({
+          trigger: 'scheduler',
+          blocking: true
+        })
+          .then((res) => {
+            if (res.triggered) {
+              fastify.log.info(
+                { status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
+                'Sincronización programada completada'
+              );
+            }
+          })
+          .catch((err) => {
+            fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en sincronización programada');
+          });
+      }
+
+      if (env.etl.enabled) {
+        evaluarYEjecutarEtlSiCorresponde({
+          trigger: 'scheduler',
+          blocking: true
+        })
+          .then((res) => {
+            if (res.triggered) {
+              fastify.log.info(
+                { status: res.status, sourceUsed: res.sourceUsed, rowsUpserted: res.rowsUpserted },
+                'ETL programado de loterías completado'
+              );
+            }
+          })
+          .catch((err) => {
+            fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en ETL programado de loterías');
+          });
+      }
     }, env.sync.schedulerTickMs);
 
     autoSyncTimer.unref();

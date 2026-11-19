@@ -1,6 +1,11 @@
 import { env } from '../config/env.js';
 import { getCarouselSessionFromRequest } from '../services/carouselAuthService.js';
 import {
+  ejecutarEtlResultados,
+  evaluarYEjecutarEtlSiCorresponde,
+  getEtlStatus
+} from '../services/etlResultadosService.js';
+import {
   ejecutarSincronizacionCompleta,
   evaluarYEjecutarSincronizacionSiCorresponde,
   getSyncStatus,
@@ -49,11 +54,22 @@ export async function syncRoutes(fastify) {
     const fechaParam = request.query?.fecha || request.body?.fecha || '';
     const urlResultadosParam = request.query?.url_resultados || request.body?.url_resultados || '';
 
-    return await ejecutarSincronizacionCompleta({
-      fechaParam,
-      urlResultadosParam,
-      trigger: 'manual'
-    });
+    const [syncResult, etlResult] = await Promise.all([
+      ejecutarSincronizacionCompleta({
+        fechaParam,
+        urlResultadosParam,
+        trigger: 'manual'
+      }),
+      ejecutarEtlResultados({
+        trigger: 'manual_sync'
+      })
+    ]);
+
+    return {
+      ...syncResult,
+      success: Boolean(syncResult.success && etlResult.success),
+      etl: etlResult
+    };
   };
 
   const retryPowerBiHandler = async (request, reply) => {
@@ -67,13 +83,20 @@ export async function syncRoutes(fastify) {
 
   const checkDueHandler = async (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
-    const evaluation = await evaluarYEjecutarSincronizacionSiCorresponde({
-      trigger: 'public_visit',
-      blocking: false
-    });
+    const [evaluation, etlCheck] = await Promise.all([
+      evaluarYEjecutarSincronizacionSiCorresponde({
+        trigger: 'public_visit',
+        blocking: false
+      }),
+      evaluarYEjecutarEtlSiCorresponde({
+        trigger: 'public_visit',
+        blocking: false
+      })
+    ]);
     return {
       success: true,
-      ...evaluation
+      ...evaluation,
+      etlCheck
     };
   };
 
@@ -82,6 +105,35 @@ export async function syncRoutes(fastify) {
     return {
       success: true,
       ...getSyncStatus()
+    };
+  };
+
+  const etlStatusHandler = async (_request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    return {
+      success: true,
+      ...getEtlStatus()
+    };
+  };
+
+  const etlRunHandler = async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    if (!(await authorizeSyncRequest(request, reply))) return;
+
+    return await ejecutarEtlResultados({
+      trigger: 'manual'
+    });
+  };
+
+  const etlCheckDueHandler = async (_request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const evaluation = await evaluarYEjecutarEtlSiCorresponde({
+      trigger: 'public_visit',
+      blocking: false
+    });
+    return {
+      success: true,
+      ...evaluation
     };
   };
 
@@ -102,4 +154,15 @@ export async function syncRoutes(fastify) {
 
   fastify.get('/sync/status', statusSyncHandler);
   fastify.get('/api/sync/status', statusSyncHandler);
+
+  fastify.get('/etl/status', etlStatusHandler);
+  fastify.get('/api/etl/status', etlStatusHandler);
+
+  fastify.post('/etl/run', etlRunHandler);
+  fastify.post('/api/etl/run', etlRunHandler);
+
+  fastify.get('/etl/check-due', etlCheckDueHandler);
+  fastify.post('/etl/check-due', etlCheckDueHandler);
+  fastify.get('/api/etl/check-due', etlCheckDueHandler);
+  fastify.post('/api/etl/check-due', etlCheckDueHandler);
 }

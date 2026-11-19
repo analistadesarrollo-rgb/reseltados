@@ -20,6 +20,31 @@ if (existsSync(localEnvPath)) {
 // Garantizar zona horaria de Colombia
 process.env.TZ = process.env.TZ || 'America/Bogota';
 
+/**
+ * Parsea una lista de horas separadas por comas (0..23), deduplica y ordena ascendentemente.
+ */
+export function parseHoursList(raw, fallback = [1, 11, 12, 13, 16, 19, 21, 23]) {
+  if (!raw || typeof raw !== 'string') {
+    return [...fallback];
+  }
+  const parsed = raw
+    .split(',')
+    .map((item) => Number.parseInt(item.trim(), 10))
+    .filter((num) => Number.isInteger(num) && num >= 0 && num <= 23);
+
+  if (parsed.length === 0) {
+    return [...fallback];
+  }
+
+  return Array.from(new Set(parsed)).sort((a, b) => a - b);
+}
+
+function parseMinuteValue(raw, fallback = 24) {
+  const parsed = Number.parseInt(raw ?? String(fallback), 10);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(59, Math.max(0, parsed));
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'production',
   tz: process.env.TZ || 'America/Bogota',
@@ -71,6 +96,25 @@ export const env = {
     lockTtlMs: Number.parseInt(process.env.SYNC_LOCK_TTL_MS || '180000', 10),
     powerBiRetryCooldownMs: Number.parseInt(process.env.POWERBI_RETRY_COOLDOWN_MS || '300000', 10),
     schedulerTickMs: Number.parseInt(process.env.SYNC_SCHEDULER_TICK_MS || '60000', 10)
+  },
+
+  dbOracle: {
+    user: process.env.DB_ORACLE_USER || '',
+    password: process.env.DB_ORACLE_PASSWORD || '',
+    connectString: process.env.DB_ORACLE_CONNECT_STRING || '',
+    libDir: process.env.DB_ORACLE_LIB_DIR || '',
+    connectTimeoutMs: Number.parseInt(process.env.DB_ORACLE_CONNECT_TIMEOUT_MS || '15000', 10)
+  },
+
+  etl: {
+    enabled: process.env.ETL_LOTERIAS_ENABLED !== 'false',
+    hours: parseHoursList(process.env.ETL_LOTERIAS_HOURS, [1, 11, 12, 13, 16, 19, 21, 23]),
+    minute: parseMinuteValue(process.env.ETL_LOTERIAS_MINUTE, 24),
+    source: (process.env.ETL_LOTERIAS_SOURCE || 'auto').toLowerCase(),
+    version: process.env.ETL_LOTERIAS_VERSION || '0',
+    onStartup: process.env.ETL_LOTERIAS_ON_STARTUP !== 'false',
+    lockTtlMs: Number.parseInt(process.env.ETL_LOTERIAS_LOCK_TTL_MS || '180000', 10),
+    retryCooldownMs: Number.parseInt(process.env.ETL_LOTERIAS_RETRY_COOLDOWN_MS || '300000', 10)
   },
 
   storage: {

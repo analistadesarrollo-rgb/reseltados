@@ -36,6 +36,27 @@
         margin: 0 auto;
       }
 
+      .btn-etl {
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-etl:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      .btn-etl:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
       .hero-header {
         background: linear-gradient(135deg, #061b4e 0%, #0d47a1 100%);
         border-bottom: 3px solid var(--gold);
@@ -442,6 +463,47 @@
       </div>
 
       <div class="card">
+        <div class="card-header header-blue">
+          <span>ETL Programado de Loterías (Oficiales, Diarios y Resumen Semanal → chatbot.resultados)</span>
+          <button id="btnEjecutarEtl" class="btn-etl" type="button">
+            Ejecutar ETL Loterías
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="grid-2" style="margin-bottom: 16px;">
+            <div class="meta-list">
+              <p><span><strong>Programación (America/Bogota)</strong></span> <strong id="etl_schedule">--</strong></p>
+              <p><span><strong>Estado ETL</strong></span> <strong id="etl_status_text">--</strong></p>
+              <p><span><strong>Fuente utilizada (modo)</strong></span> <strong id="etl_source_used">--</strong></p>
+              <p><span><strong>Última franja completada</strong></span> <strong id="etl_last_slot">--</strong></p>
+            </div>
+            <div class="meta-list">
+              <p>
+                <span><strong>Última ejecución</strong></span>
+                <span><strong id="etl_last_run">--</strong> (<span id="etl_trigger">--</span>)</span>
+              </p>
+              <p><span><strong>Próxima ejecución programada</strong></span> <strong id="etl_next_run">--</strong></p>
+              <p><span><strong>Filas extraídas / guardadas</strong></span> <strong id="etl_rows_count">--</strong></p>
+              <p><span><strong>Duración último ETL</strong></span> <strong id="etl_duration">--</strong></p>
+            </div>
+          </div>
+
+          <div class="terminal-wrap">
+            <div class="terminal-top">
+              <div class="terminal-dots" aria-hidden="true">
+                <span style="background: #ef4444;"></span>
+                <span style="background: #f59e0b;"></span>
+                <span style="background: #22c55e;"></span>
+              </div>
+              <span>etl-loterias.log</span>
+              <button type="button" id="btnCopyEtlLogs" class="btn-copy-log">Copiar bitácora ETL</button>
+            </div>
+            <div class="log-box" id="etl_logs">Cargando estado del ETL de loterías...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-header header-dark">Bitácora de Sincronización</div>
         <div class="card-body">
           <div class="terminal-wrap">
@@ -489,20 +551,29 @@
         idle: 'En espera',
         running: 'En ejecución',
         completed: 'Completada',
+        completed_fallback: 'Completada (respaldo API)',
         partial: 'Completada (parcial)',
         main_db_error: 'Error en BD Principal',
-        powerbi_db_error: 'Error en BD PowerBI (Pendiente)'
+        powerbi_db_error: 'Error en BD PowerBI (Pendiente)',
+        error: 'Error'
+      };
+
+      const SOURCE_LABELS = {
+        oracle: 'Oracle 11g (BDMM028)',
+        internal_api: 'API Interna (respaldo)'
       };
 
       async function cargarResultados() {
         try {
-          const [respDatos, respSync] = await Promise.all([
+          const [respDatos, respSync, respEtl] = await Promise.all([
             fetch('/api/datos?t=' + Date.now(), { cache: 'no-store' }),
-            fetch('/api/sync/status?t=' + Date.now(), { cache: 'no-store' })
+            fetch('/api/sync/status?t=' + Date.now(), { cache: 'no-store' }),
+            fetch('/api/etl/status?t=' + Date.now(), { cache: 'no-store' })
           ]);
 
           const data = await respDatos.json();
           const syncData = await respSync.json();
+          const etlData = await respEtl.json();
 
           if (data.success && data.data) {
             const baloto = data.data.baloto || {};
@@ -619,6 +690,29 @@
               }
             }
           }
+
+          if (etlData && etlData.success) {
+            document.getElementById('etl_schedule').textContent =
+              `${etlData.schedule || '--'} (${etlData.timezone || 'America/Bogota'})`;
+            document.getElementById('etl_status_text').textContent =
+              STATUS_LABELS[etlData.status] || etlData.status || '--';
+            const srcLabel = etlData.sourceUsed ? SOURCE_LABELS[etlData.sourceUsed] || etlData.sourceUsed : 'Sin ejecutar';
+            document.getElementById('etl_source_used').textContent = `${srcLabel} (modo: ${etlData.sourceMode || 'auto'})`;
+            document.getElementById('etl_last_slot').textContent = etlData.lastCompletedSlotKey || '--';
+            document.getElementById('etl_last_run').textContent = etlData.lastRunAt || '--';
+            document.getElementById('etl_trigger').textContent = etlData.lastTrigger || '--';
+            document.getElementById('etl_next_run').textContent = etlData.nextScheduledAt || '--';
+            document.getElementById('etl_rows_count').textContent =
+              etlData.rowsExtracted !== undefined
+                ? `${etlData.rowsExtracted} extraídas / ${etlData.rowsUpserted ?? 0} guardadas`
+                : '--';
+            document.getElementById('etl_duration').textContent =
+              etlData.durationMs !== null && etlData.durationMs !== undefined ? `${etlData.durationMs} ms` : '--';
+
+            if (Array.isArray(etlData.logs) && etlData.logs.length > 0) {
+              document.getElementById('etl_logs').textContent = etlData.logs.join('\n');
+            }
+          }
         } catch (err) {
           console.error('Error cargando resultados:', err);
         }
@@ -692,6 +786,41 @@
         }
       }
 
+      async function ejecutarEtlManual() {
+        const btn = document.getElementById('btnEjecutarEtl');
+        const badge = document.getElementById('estadoConexion');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = 'Ejecutando ETL...';
+        try {
+          const resp = await fetch('/api/etl/run?t=' + Date.now(), {
+            method: 'POST',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          const resJson = await resp.json();
+          if (resJson.alreadyRunning) {
+            badge.textContent = 'ETL ya en ejecución';
+            badge.className = 'badge bg-primary';
+          } else if (resp.ok && resJson.success) {
+            badge.textContent = `ETL Loterías OK (${resJson.rowsUpserted ?? 0} filas)`;
+            badge.className = 'badge bg-success';
+          } else {
+            badge.textContent = 'Error ejecutando ETL Loterías';
+            badge.className = 'badge bg-danger';
+          }
+          await cargarResultados();
+        } catch (err) {
+          badge.textContent = 'Error ejecutando ETL Loterías';
+          badge.className = 'badge bg-danger';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Ejecutar ETL Loterías';
+        }
+      }
+
       document.getElementById('btnCopyLogs')?.addEventListener('click', () => {
         const logsText = document.getElementById('sync_logs')?.textContent || '';
         navigator.clipboard?.writeText(logsText);
@@ -704,9 +833,22 @@
         }
       });
 
+      document.getElementById('btnCopyEtlLogs')?.addEventListener('click', () => {
+        const logsText = document.getElementById('etl_logs')?.textContent || '';
+        navigator.clipboard?.writeText(logsText);
+        const btn = document.getElementById('btnCopyEtlLogs');
+        if (btn) {
+          btn.textContent = 'Copiado';
+          setTimeout(() => {
+            btn.textContent = 'Copiar bitácora ETL';
+          }, 1500);
+        }
+      });
+
       document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btnActualizar')?.addEventListener('click', ejecutarExtraccionDatos);
         document.getElementById('btnRetryPowerBi')?.addEventListener('click', reintentarPowerBi);
+        document.getElementById('btnEjecutarEtl')?.addEventListener('click', ejecutarEtlManual);
         cargarResultados();
       });
     </script>

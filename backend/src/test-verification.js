@@ -23,6 +23,18 @@ const {
   listarImagenesCarrusel,
   seedCarouselIfNeeded
 } = await import('./services/carouselService.js');
+const {
+  calcularProximoHorarioEtl,
+  ejecutarEtlResultados,
+  evaluarYEjecutarEtlSiCorresponde,
+  extraerDesdeApiInterna,
+  formatLotteryResult,
+  getCronExpression,
+  getMostRecentDueSlot,
+  initEtlState,
+  normalizeResultadoRow,
+  upsertResultadoLoteria
+} = await import('./services/etlResultadosService.js');
 const { extraerFuentesExternas } = await import('./services/scraperService.js');
 const {
   ejecutarSincronizacionCompleta,
@@ -77,6 +89,7 @@ async function runTests() {
   await seedCarouselIfNeeded({ dataDir: isolatedDataDir });
   await initCarouselAuthStore({ dataDir: isolatedDataDir, initialPassword: testInitialPassword });
   await initSyncState({ dataDir: isolatedDataDir });
+  await initEtlState({ dataDir: isolatedDataDir });
 
   const fastify = await buildServer();
   let passed = 0;
@@ -115,6 +128,9 @@ async function runTests() {
       const res = await fastify.inject({ method: 'GET', url: '/api/health/db' });
       assert.equal(res.statusCode, 200);
       assert.equal(res.json().timezone, 'America/Bogota');
+      assert.ok(res.json().dependencies.oracleEtlSource);
+      assert.ok(res.json().etl);
+      assert.equal(res.json().etl.schedule, '24 1,11,12,13,16,19,21,23 * * *');
     });
 
     // 3. Consulta completa de resultados (/api/datos) y control por hash
@@ -241,10 +257,11 @@ async function runTests() {
         assert.equal(res404.statusCode, 404, `Ruta eliminada ${removedEp.url} debería retornar 404`);
       }
 
-      // Comprobar que GESTOR_CARRUSEL tiene acceso bloqueado con 403 en endpoints de sincronización
+      // Comprobar que GESTOR_CARRUSEL tiene acceso bloqueado con 403 en endpoints de sincronización y ETL
       const blockedEndpoints = [
         { method: 'POST', url: '/api/sync', headers: { 'x-requested-with': 'XMLHttpRequest' } },
-        { method: 'POST', url: '/api/sync/retry-powerbi', headers: { 'x-requested-with': 'XMLHttpRequest' } }
+        { method: 'POST', url: '/api/sync/retry-powerbi', headers: { 'x-requested-with': 'XMLHttpRequest' } },
+        { method: 'POST', url: '/api/etl/run', headers: { 'x-requested-with': 'XMLHttpRequest' } }
       ];
 
       for (const ep of blockedEndpoints) {
@@ -571,7 +588,7 @@ async function runTests() {
 
     // 12. Verificar evaluación automática al abrir URL pública (/api/datos?checkSync=1)
     await test('GET /api/datos?checkSync=1 evalúa intervalos en America/Bogota sin bloquear el tablero', async () => {
-      // Simular última actualización reciente en el estado aislado para no escribir innecesariamente en BD real durante npm test
+      // Simular última actualización y franja ETL recientes en el estado aislado para no escribir innecesariamente en BD real durante npm test
       await writeFile(
         join(isolatedDataDir, 'sync-state.json'),
         JSON.stringify({
@@ -582,7 +599,16 @@ async function runTests() {
         }),
         'utf8'
       );
+      await writeFile(
+        join(isolatedDataDir, 'etl-loterias-state.json'),
+        JSON.stringify({
+          status: 'completed',
+          lastCompletedSlotKey: getMostRecentDueSlot().slotKey
+        }),
+        'utf8'
+      );
       await initSyncState({ dataDir: isolatedDataDir });
+      await initEtlState({ dataDir: isolatedDataDir });
 
       const rStatus = await fastify.inject({ method: 'GET', url: '/api/sync/status' });
       assert.equal(rStatus.statusCode, 200);
@@ -595,6 +621,9 @@ async function runTests() {
       assert.ok(body.syncCheck);
       assert.equal(body.syncCheck.triggered, false);
       assert.equal(body.syncCheck.reason, 'not_due');
+      assert.ok(body.etlCheck);
+      assert.equal(body.etlCheck.triggered, false);
+      assert.equal(body.etlCheck.reason, 'not_due');
     });
 
     // 13. Verificar GET_LOCK / RELEASE_LOCK real en MariaDB 172.20.1.92
@@ -671,6 +700,214 @@ async function runTests() {
 
         await conn.rollback();
         console.log('     -> INSERT, UPDATE, prevención de duplicados y ROLLBACK verificados limpiamente.');
+      } finally {
+        conn.release();
+      }
+    });
+
+    // 16. Cálculo exacto de horario cron ETL (24 1,11,12,13,16,19,21,23 * * * en America/Bogota)
+    await test('Cálculo exacto de franjas cron ETL (24 1,11,12,13,16,19,21,23 * * * en America/Bogota)', async () => {
+      assert.equal(getCronExpression([1, 11, 12, 13, 16, 19, 21, 23], 24), '24 1,11,12,13,16,19,21,23 * * *');
+
+      const opts = { hours: [1, 11, 12, 13, 16, 19, 21, 23], minute: 24 };
+      const tBeforeFirst = new Date('2026-11-19T00:30:00-05:00');
+      assert.equal(getMostRecentDueSlot(tBeforeFirst, opts).slotKey, '2026-11-18 23:24');
+      assert.equal(calcularProximoHorarioEtl(tBeforeFirst, opts), '2026-11-19 01:24:00');
+
+      const tExactFirst = new Date('2026-11-19T01:24:00-05:00');
+      assert.equal(getMostRecentDueSlot(tExactFirst, opts).slotKey, '2026-11-19 01:24');
+      assert.equal(calcularProximoHorarioEtl(tExactFirst, opts), '2026-11-19 11:24:00');
+
+      const tAfternoon = new Date('2026-11-19T13:25:00-05:00');
+      assert.equal(getMostRecentDueSlot(tAfternoon, opts).slotKey, '2026-11-19 13:24');
+      assert.equal(calcularProximoHorarioEtl(tAfternoon, opts), '2026-11-19 16:24:00');
+
+      const tAfterLast = new Date('2026-11-19T23:30:00-05:00');
+      assert.equal(getMostRecentDueSlot(tAfterLast, opts).slotKey, '2026-11-19 23:24');
+      assert.equal(calcularProximoHorarioEtl(tAfterLast, opts), '2026-11-20 01:24:00');
+    });
+
+    // 17. Reglas exactas de formateo heredadas de CHATBOT_CONSULTAS_MYSQL.sql y límites de columnas
+    await test('Reglas exactas de formateo de resultados (serie último dígito, Astro sin guion, longitudes MariaDB)', async () => {
+      for (const codeWithSeries of [1, 10, 13, 17, 22, 26, 27, 63]) {
+        assert.equal(formatLotteryResult(codeWithSeries, '0639', '023'), '0639-3');
+        assert.equal(formatLotteryResult(codeWithSeries, '0639-3', '--3'), '0639-3');
+      }
+
+      for (const astroCode of [47, 48]) {
+        assert.equal(formatLotteryResult(astroCode, '0748', 'ACU'), '0748ACU');
+        assert.equal(formatLotteryResult(astroCode, '0748ACU', 'ACU'), '0748ACU');
+      }
+
+      for (const plainCode of [3, 5, 11]) {
+        assert.equal(formatLotteryResult(plainCode, '1162', '000'), '1162');
+      }
+
+      const norm = normalizeResultadoRow({
+        fecha: '2026-11-19',
+        codigo: 17,
+        loteria: 'NOMBRE LOTERIA EXCESIVAMENTE LARGO DE PRUEBA',
+        resultado: '7366',
+        serie: '107',
+        version: '0'
+      });
+      assert.equal(norm.resultado, '7366-7');
+      assert.equal(norm.loteria.length, 30);
+      assert.equal(norm.version, '0');
+      assert.equal(normalizeResultadoRow({ fecha: 'invalida', codigo: 1, resultado: '1234' }), null);
+    });
+
+    // 18. Extracción real desde API interna (respaldo) + protección y estado de /api/etl/*
+    await test('Extracción real de loterías vía respaldo API interna y seguridad de endpoints /api/etl/*', async () => {
+      const logs = [];
+      const rows = await extraerDesdeApiInterna(logs);
+      console.log(`     -> ETL API Interna extrajo ${rows.length} registros válidos (ayer + hoy).`);
+      assert.ok(rows.length > 0, 'Se esperaban resultados de loterías desde API interna');
+
+      const forbidden = new Set([235, 2351, 245, 273, 3000, 4000, 5000]);
+      for (const r of rows) {
+        assert.equal(forbidden.has(r.codigo), false, `Código especial ${r.codigo} no debe mezclarse en chatbot.resultados`);
+        assert.ok(r.loteria.length <= 30);
+        assert.ok(r.resultado.length <= 10);
+        assert.equal(r.version, '0');
+      }
+
+      const stRes = await fastify.inject({ method: 'GET', url: '/api/etl/status' });
+      assert.equal(stRes.statusCode, 200);
+      assert.equal(stRes.json().schedule, '24 1,11,12,13,16,19,21,23 * * *');
+
+      const unauthRun = await fastify.inject({ method: 'POST', url: '/api/etl/run' });
+      assert.equal(unauthRun.statusCode, 401);
+    });
+
+    // 19. Concurrencia del ETL de loterías e idempotencia por franja horaria
+    await test('Bloqueo concurrente ETL (5 llamadas -> 1 ejecución) e idempotencia por franja horaria', async () => {
+      const etlTestDir = join(testTempRoot, 'etl-concurrent');
+      await initEtlState({ dataDir: etlTestDir });
+
+      let execCount = 0;
+      const fakeEtlDeps = {
+        forceEnabled: true,
+        sourceMode: 'api',
+        useDbLock: true,
+        extraerDesdeApiInterna: async () => {
+          execCount++;
+          await new Promise((r) => setTimeout(r, 120));
+          return [
+            { fecha: '2026-11-19', codigo: 3, loteria: 'DORADO MANANA', resultado: '1031', version: '0' }
+          ];
+        },
+        guardarResultadosEnBdPrincipal: async (recs) => ({
+          upsertedCount: recs.length,
+          insertedCount: 0,
+          updatedCount: recs.length,
+          dates: ['2026-11-19']
+        })
+      };
+
+      const slotTime = new Date('2026-11-19T11:25:00-05:00');
+      const slotKey = getMostRecentDueSlot(slotTime).slotKey;
+
+      const concurrent = await Promise.all(
+        Array.from({ length: 5 }, (_, idx) =>
+          ejecutarEtlResultados({
+            trigger: idx === 0 ? 'scheduler' : 'public_visit',
+            slotKey,
+            _dataDir: etlTestDir,
+            _injectDeps: fakeEtlDeps
+          })
+        )
+      );
+
+      assert.equal(execCount, 1, 'Solo 1 proceso debe ejecutar el ETL concurrentemente');
+      assert.equal(concurrent.filter((r) => !r.alreadyRunning).length, 1);
+      assert.equal(concurrent.filter((r) => r.alreadyRunning).length, 4);
+
+      const sameSlotCheck = await evaluarYEjecutarEtlSiCorresponde({
+        trigger: 'scheduler',
+        blocking: true,
+        now: new Date('2026-11-19T12:10:00-05:00'),
+        _dataDir: etlTestDir,
+        _injectDeps: fakeEtlDeps
+      });
+      assert.equal(sameSlotCheck.triggered, false);
+      assert.equal(sameSlotCheck.reason, 'not_due');
+
+      const nextSlotCheck = await evaluarYEjecutarEtlSiCorresponde({
+        trigger: 'scheduler',
+        blocking: true,
+        now: new Date('2026-11-19T12:24:05-05:00'),
+        _dataDir: etlTestDir,
+        _injectDeps: fakeEtlDeps
+      });
+      assert.equal(nextSlotCheck.triggered, true);
+      assert.equal(execCount, 2);
+
+      // Verificar failover automático (modo auto: si Oracle 11g falla -> respaldo API interna)
+      const failoverDir = join(testTempRoot, 'etl-failover');
+      await initEtlState({ dataDir: failoverDir });
+      const failoverRes = await ejecutarEtlResultados({
+        trigger: 'scheduler',
+        slotKey: '2026-11-19 16:24',
+        _dataDir: failoverDir,
+        _injectDeps: {
+          useDbLock: false,
+          sourceMode: 'auto',
+          extraerDesdeOracle: async () => {
+            throw new Error('Simulacion Oracle Instant Client no disponible');
+          },
+          extraerDesdeApiInterna: fakeEtlDeps.extraerDesdeApiInterna,
+          guardarResultadosEnBdPrincipal: fakeEtlDeps.guardarResultadosEnBdPrincipal
+        }
+      });
+      assert.equal(failoverRes.success, true);
+      assert.equal(failoverRes.status, 'completed_fallback');
+      assert.equal(failoverRes.sourceUsed, 'internal_api');
+    });
+
+    // 20. Prueba transaccional no destructiva (INSERT + UPDATE + sin duplicados + ROLLBACK) en MariaDB chatbot.resultados
+    await test('Prueba transaccional no destructiva (INSERT + UPDATE + sin duplicados + ROLLBACK) en MariaDB chatbot.resultados', async () => {
+      const pool = getMainPool();
+      const conn = await pool.getConnection();
+      const testDate = '2099-12-31';
+      const testCode = 99999;
+
+      try {
+        await conn.beginTransaction();
+
+        await upsertResultadoLoteria(conn, {
+          fecha: testDate,
+          codigo: testCode,
+          loteria: 'PRUEBA ETL ASTRO',
+          resultado: '0639-3',
+          version: '0'
+        });
+
+        const [afterInsert] = await conn.execute(
+          'SELECT fecha, codigo, loteria, resultado, version FROM resultados WHERE fecha = ? AND codigo = ?',
+          [testDate, testCode]
+        );
+        assert.equal(afterInsert.length, 1);
+        assert.equal(afterInsert[0].resultado, '0639-3');
+
+        await upsertResultadoLoteria(conn, {
+          fecha: testDate,
+          codigo: testCode,
+          loteria: 'PRUEBA ETL ASTRO ACT',
+          resultado: '7777-8',
+          version: '0'
+        });
+
+        const [afterUpdate] = await conn.execute(
+          'SELECT fecha, codigo, loteria, resultado, version FROM resultados WHERE fecha = ? AND codigo = ?',
+          [testDate, testCode]
+        );
+        assert.equal(afterUpdate.length, 1, 'UNIQUE KEY (fecha, codigo) debe actualizar sin duplicar filas');
+        assert.equal(afterUpdate[0].resultado, '7777-8');
+        assert.equal(afterUpdate[0].loteria, 'PRUEBA ETL ASTRO ACT');
+
+        await conn.rollback();
+        console.log('     -> INSERT, UPDATE, prevención de duplicados y ROLLBACK en chatbot.resultados verificados.');
       } finally {
         conn.release();
       }

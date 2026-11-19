@@ -26,6 +26,11 @@ Cree el archivo `.env` en el servidor (nunca lo suba a Git) o actualice el Secre
 - `SYNC_API_TOKEN` (token secreto para autorizar `POST /api/sync`)
 - `AUTO_SYNC_ENABLED=true`, `AUTO_SYNC_INTERVAL_MS=3600000`, `AUTO_SYNC_ON_STARTUP=true`
 - `SYNC_LOCK_TTL_MS=180000`, `POWERBI_RETRY_COOLDOWN_MS=300000`, `SYNC_SCHEDULER_TICK_MS=60000`
+- **ETL de Loterías (`Oracle 11g -> chatbot.resultados`)**:
+  - `ETL_LOTERIAS_ENABLED=true`, `ETL_LOTERIAS_HOURS=1,11,12,13,16,19,21,23`, `ETL_LOTERIAS_MINUTE=24`
+  - `ETL_LOTERIAS_SOURCE=auto`, `ETL_LOTERIAS_VERSION=0`, `ETL_LOTERIAS_ON_STARTUP=true`
+  - `DB_ORACLE_USER`, `DB_ORACLE_PASSWORD`, `DB_ORACLE_CONNECT_STRING=10.167.27.90:1521/BDMM028`, `DB_ORACLE_CONNECT_TIMEOUT_MS=15000`
+  - `DB_ORACLE_LIB_DIR` (en Docker Compose se fija en `/opt/oracle/instantclient_11_2`; dejar vacío en desarrollo local si no hay Instant Client instalado).
 - `CAROUSEL_MAX_FILE_SIZE_BYTES=10485760`, `CAROUSEL_ADMIN_INITIAL_USER=admin`
 - `CAROUSEL_ADMIN_INITIAL_PASSWORD` (contraseña inicial del gestor de imágenes; nunca en Git)
 - `CAROUSEL_ADMIN_REQUIRE_PASSWORD_CHANGE=true`, `COOKIE_SECURE=auto`
@@ -39,10 +44,11 @@ Cree el archivo `.env` en el servidor (nunca lo suba a Git) o actualice el Secre
 El `Jenkinsfile` automatiza las siguientes etapas:
 1. **Prepare Environment (`.env`)** desde credencial `ENV_RESULTADOS_ASTRO`.
 2. **Verify External Docker Network** (`red-gane-int`).
-3. **Build Docker Images** (`resultados-astro-api:v2.0` y `resultados-astro-web:v2.0`).
-4. **Stop Previous Project Containers** (`down --remove-orphans` sin `-v` para conservar volúmenes).
-5. **Deploy with Docker Compose** (`up -d`).
-6. **Verify Containers, Volúmenes y `/health`**.
+3. **Prepare Oracle Instant Client (11.2)** desde `/var/lib/jenkins/instantclient_11_2` hacia `./backend/instantclient_11_2/`.
+4. **Build Docker Images** (`resultados-astro-api:v2.0` y `resultados-astro-web:v2.0`).
+5. **Stop Previous Project Containers** (`down --remove-orphans` sin `-v` para conservar volúmenes).
+6. **Deploy with Docker Compose** (`up -d`).
+7. **Verify Containers, Volúmenes, `/health` y `/api/etl/status`**.
 
 ## 4. Configuración en Nginx Proxy Manager (NPM)
 

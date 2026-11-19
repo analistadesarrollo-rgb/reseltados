@@ -37,6 +37,8 @@ services:
       APP_DATA_DIR: /app/data
       CAROUSEL_IMAGES_DIR: /app/carousel
       CAROUSEL_SEED_DIR: /app/carousel-seed
+      DB_ORACLE_LIB_DIR: /opt/oracle/instantclient_11_2
+      LD_LIBRARY_PATH: /opt/oracle/instantclient_11_2
     volumes:
       - resultados_astro_carousel:/app/carousel
       - resultados_astro_data:/app/data

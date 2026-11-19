@@ -5,7 +5,7 @@ Reconstrucción técnica completa del sistema de visualización y sincronizació
 ## Arquitectura
 
 - **Frontend (`frontend/`)**: Astro 5 compilado de forma estática (`output: 'static'`) y servido mediante **Nginx** con compresión Gzip y caché optimizada para imágenes. Sin React ni frameworks pesados.
-- **Backend (`backend/`)**: API REST en **Node.js 22 + Fastify 5** con pool de conexiones `mysql2/promise`, scraping multi-fuente tolerante a fallos, sincronización atómica hacia la base de datos externa `POWERBI.INFORESULTADOS` y scheduler automático en zona horaria `America/Bogota`.
+- **Backend (`backend/`)**: API REST en **Node.js 22 + Fastify 5** con pool de conexiones `mysql2/promise`, soporte **Oracle 11g Thick Mode** (`oracledb` + respaldo API interna) para el ETL programado de loterías (`24 1,11,12,13,16,19,21,23 * * *`), scraping multi-fuente tolerante a fallos, sincronización atómica hacia `POWERBI.INFORESULTADOS` y scheduler automático en zona horaria `America/Bogota`.
 - **Infraestructura (raíz)**: `docker-compose.yml`, `nginx.conf`, `Jenkinsfile`, `.env.example`, `.gitignore`, `.dockerignore`.
 
 ## Estructura del proyecto
@@ -64,7 +64,10 @@ resultados_astro/
 | `GET` | `/api/carousel-images` | Listado dinámico de imágenes del carrusel comercial |
 | `GET` | `/api/sync/status` | Estado de la última sincronización, PowerBI, errores e historial |
 | `GET` / `POST` | `/api/sync/check-due` | Evalúa en servidor si corresponde sincronizar según intervalo |
-| `POST` | `/api/sync` y `/api/sync/retry-powerbi` | Ejecuta sincronización manual o reintento PowerBI pendiente |
+| `POST` | `/api/sync` y `/api/sync/retry-powerbi` | Ejecuta sincronización manual (PowerBI + ETL loterías) o reintento PowerBI pendiente |
+| `GET` | `/api/etl/status` | Estado, programación y bitácora del ETL programado de loterías |
+| `POST` | `/api/etl/run` | Ejecución manual del ETL de loterías (`Oracle 11g -> chatbot.resultados`) |
+| `GET` / `POST` | `/api/etl/check-due` | Evalúa si corresponde ejecutar la franja actual del ETL en `America/Bogota` |
 | `*` | `/api/carousel-admin/*` | Login, sesión HttpOnly, CSRF, subida, listado y borrado exclusivo del carrusel (`GESTOR_CARRUSEL`) |
 
 ## Ejecución local rápida
@@ -99,3 +102,4 @@ resultados_astro/
 - [Diagnóstico y Solución de la BD Externa (`POWERBI.INFORESULTADOS`)](docs/SOLUCION_BD_EXTERNA_POWERBI.md)
 - [Guía de Despliegue en Producción (Docker, Nginx y Jenkins)](docs/DESPLIEGUE_PRODUCCION.md)
 - [Gestión Restringida del Carrusel y Actualización Automática](docs/GESTION_CARRUSEL_Y_SYNC_AUTO.md)
+- [ETL Programado e Independiente de Loterías (Oracle 11g -> chatbot.resultados)](docs/ETL_RESULTADOS_ORACLE.md)

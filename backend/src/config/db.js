@@ -12,7 +12,8 @@ export function sanitizeDbError(err) {
   const msg = String(err.message || err.code || 'Error de conexión');
   const secrets = [
     env.dbMain.password,
-    env.dbPowerBi.password
+    env.dbPowerBi.password,
+    env.dbOracle.password
   ].filter(Boolean);
 
   let safe = msg;
