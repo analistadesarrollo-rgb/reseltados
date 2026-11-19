@@ -1,8 +1,14 @@
 import { env } from '../config/env.js';
-import { ejecutarSincronizacionCompleta, getSyncStatus } from '../services/syncPowerBiService.js';
+import { getCarouselSessionFromRequest } from '../services/carouselAuthService.js';
+import {
+  ejecutarSincronizacionCompleta,
+  evaluarYEjecutarSincronizacionSiCorresponde,
+  getSyncStatus,
+  reintentarSincronizacionPowerBiPendiente
+} from '../services/syncPowerBiService.js';
 import { verifyAdminToken } from './admin.js';
 
-function isAuthorizedSyncRequest(request) {
+async function authorizeSyncRequest(request, reply) {
   const configuredToken = env.sync.syncApiToken;
   const headerToken =
     request.headers['x-sync-token'] ||
@@ -14,40 +20,67 @@ function isAuthorizedSyncRequest(request) {
     return true;
   }
 
-  // Permitir token de sesión administrativa válida
+  // Permitir token de sesión administrativa válida (ADMIN_RESULTADOS)
   if (headerToken && verifyAdminToken(headerToken)) {
     return true;
   }
 
+  // Bloquear explícitamente al rol limitado GESTOR_CARRUSEL aunque envíe X-Requested-With
+  const carouselSession = await getCarouselSessionFromRequest(request);
+  if (carouselSession) {
+    reply.code(403).send({
+      success: false,
+      error: 'Acceso denegado: el rol GESTOR_CARRUSEL únicamente puede administrar imágenes del carrusel.'
+    });
+    return false;
+  }
+
   // Permitir disparo desde el Panel de Validación interno cuando incluye cabecera X-Requested-With
-  const xRequestedWith = request.headers['x-requested-with'];
-  if (xRequestedWith === 'XMLHttpRequest') {
+  if (request.headers['x-requested-with'] === 'XMLHttpRequest') {
     return true;
   }
 
+  reply.code(401).send({
+    success: false,
+    error: 'No autorizado para ejecutar procesos de escritura/sincronización.'
+  });
   return false;
 }
 
 export async function syncRoutes(fastify) {
   const triggerSyncHandler = async (request, reply) => {
     reply.header('Cache-Control', 'no-store');
-
-    if (!isAuthorizedSyncRequest(request)) {
-      return reply.code(401).send({
-        success: false,
-        error: 'No autorizado para ejecutar procesos de escritura/sincronización.'
-      });
-    }
+    if (!(await authorizeSyncRequest(request, reply))) return;
 
     const fechaParam = request.query?.fecha || request.body?.fecha || '';
     const urlResultadosParam = request.query?.url_resultados || request.body?.url_resultados || '';
 
-    const result = await ejecutarSincronizacionCompleta({
+    return await ejecutarSincronizacionCompleta({
       fechaParam,
-      urlResultadosParam
+      urlResultadosParam,
+      trigger: 'manual'
     });
+  };
 
-    return result;
+  const retryPowerBiHandler = async (request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    if (!(await authorizeSyncRequest(request, reply))) return;
+
+    return await reintentarSincronizacionPowerBiPendiente({
+      trigger: 'manual'
+    });
+  };
+
+  const checkDueHandler = async (_request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const evaluation = await evaluarYEjecutarSincronizacionSiCorresponde({
+      trigger: 'public_visit',
+      blocking: false
+    });
+    return {
+      success: true,
+      ...evaluation
+    };
   };
 
   const statusSyncHandler = async (_request, reply) => {
@@ -64,6 +97,14 @@ export async function syncRoutes(fastify) {
   fastify.get('/api/sync', triggerSyncHandler);
   fastify.get('/actualiza_baloto.php', triggerSyncHandler);
   fastify.post('/actualiza_baloto.php', triggerSyncHandler);
+
+  fastify.post('/sync/retry-powerbi', retryPowerBiHandler);
+  fastify.post('/api/sync/retry-powerbi', retryPowerBiHandler);
+
+  fastify.get('/sync/check-due', checkDueHandler);
+  fastify.post('/sync/check-due', checkDueHandler);
+  fastify.get('/api/sync/check-due', checkDueHandler);
+  fastify.post('/api/sync/check-due', checkDueHandler);
 
   fastify.get('/sync/status', statusSyncHandler);
   fastify.get('/api/sync/status', statusSyncHandler);

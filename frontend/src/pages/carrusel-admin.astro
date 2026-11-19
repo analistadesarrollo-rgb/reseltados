@@ -1,0 +1,1119 @@
+---
+---
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestor de Imágenes del Carrusel - Resultados</title>
+    <style is:global>
+      :root {
+        --bg: #f1f5f9;
+        --surface: #ffffff;
+        --border: #e2e8f0;
+        --primary: #0d47a1;
+        --primary-hover: #1565c0;
+        --danger: #dc2626;
+        --danger-hover: #b91c1c;
+        --warning-bg: #fef3c7;
+        --warning-text: #92400e;
+        --success-bg: #dcfce7;
+        --success-text: #166534;
+        --error-bg: #fee2e2;
+        --error-text: #991b1b;
+        --text: #0f172a;
+        --muted: #64748b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* Vista Login */
+      .login-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #0b2a5b 0%, #1565c0 100%);
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      }
+
+      .login-badge {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 4px 10px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+
+      .login-card h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        color: var(--text);
+      }
+
+      .login-card p {
+        margin: 0 0 22px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #334155;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 11px 13px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .form-group input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.14);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s, opacity 0.2s;
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: #ffffff;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        background: #e2e8f0;
+        color: #1e293b;
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: #cbd5e1;
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: #ffffff;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: var(--danger-hover);
+      }
+
+      .alert {
+        display: none;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+
+      .alert.show {
+        display: block;
+      }
+
+      .alert-error {
+        background: var(--error-bg);
+        color: var(--error-text);
+      }
+
+      .alert-success {
+        background: var(--success-bg);
+        color: var(--success-text);
+      }
+
+      .alert-warning {
+        background: var(--warning-bg);
+        color: var(--warning-text);
+      }
+
+      /* Panel Principal */
+      .panel-shell {
+        display: none;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 24px 18px 48px;
+      }
+
+      .topbar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 22px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      }
+
+      .topbar-title h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        color: var(--primary);
+      }
+
+      .topbar-meta {
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .role-pill {
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 2px 9px;
+        border-radius: 999px;
+      }
+
+      .topbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .password-banner {
+        display: none;
+        background: var(--warning-bg);
+        border: 1px solid #fcd34d;
+        color: var(--warning-text);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .password-banner.show {
+        display: flex;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 22px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+        color: var(--text);
+      }
+
+      .dropzone {
+        border: 2px dashed #94a3b8;
+        border-radius: 12px;
+        padding: 28px 18px;
+        text-align: center;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+      }
+
+      .dropzone.dragover {
+        border-color: var(--primary);
+        background: #eff6ff;
+      }
+
+      .dropzone-hint {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .upload-preview {
+        display: none;
+        margin-top: 16px;
+        padding: 14px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      .upload-preview.show {
+        display: flex;
+      }
+
+      .upload-preview-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .upload-preview img {
+        width: 96px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #ffffff;
+      }
+
+      .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .count-badge {
+        background: #e2e8f0;
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 4px 12px;
+        border-radius: 999px;
+      }
+
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 18px;
+      }
+
+      .img-card {
+        min-width: 0;
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+
+      .img-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      }
+
+      .img-thumb-wrap {
+        position: relative;
+        width: 100%;
+        height: 160px;
+        background: #0f172a;
+        overflow: hidden;
+        cursor: zoom-in;
+      }
+
+      .img-thumb-wrap img {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .img-body {
+        padding: 13px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .img-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        word-break: break-word;
+      }
+
+      .img-meta {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .tag-protected {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        background: var(--warning-bg);
+        color: var(--warning-text);
+        padding: 2px 8px;
+        border-radius: 6px;
+        align-self: flex-start;
+      }
+
+      .img-actions {
+        margin-top: auto;
+        padding-top: 8px;
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 36px 16px;
+        color: var(--muted);
+        border: 1px dashed var(--border);
+        border-radius: 10px;
+      }
+
+      /* Modales */
+      .modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.65);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      .modal-backdrop.show {
+        display: flex;
+      }
+
+      .modal-card {
+        width: 100%;
+        max-width: 460px;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 24px;
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.35);
+      }
+
+      .modal-card h3 {
+        margin: 0 0 10px;
+        font-size: 19px;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .modal-delete-preview {
+        width: 100%;
+        max-height: 200px;
+        object-fit: contain;
+        background: #0f172a;
+        border-radius: 8px;
+        margin: 10px 0;
+      }
+
+      .lightbox-img {
+        max-width: 90vw;
+        max-height: 82vh;
+        border-radius: 10px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Pantalla de Inicio de Sesión Independiente -->
+    <main id="login-view" class="login-shell">
+      <section class="login-card" aria-label="Inicio de sesión gestor de carrusel">
+        <span class="login-badge">ACCESO RESTRINGIDO · CARRUSEL</span>
+        <h1>Administrador de Imágenes</h1>
+        <p>
+          Inicia sesión para visualizar, agregar o eliminar las imágenes promocionales del carrusel público de
+          televisores.
+        </p>
+
+        <div id="login-alert" class="alert" role="alert"></div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-username">Usuario</label>
+            <input id="login-username" name="username" type="text" autocomplete="username" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <button id="btn-login" type="submit" class="btn btn-primary" style="width: 100%;">
+            Ingresar al Gestor de Carrusel
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- Consola de Administración del Carrusel -->
+    <main id="panel-view" class="panel-shell">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1>Gestión de Imágenes del Carrusel</h1>
+          <div class="topbar-meta">
+            <span>Usuario: <strong id="meta-username">admin</strong></span>
+            <span class="role-pill" id="meta-role">GESTOR_CARRUSEL</span>
+            <span>Solo administración de imágenes públicas</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" id="btn-open-password" class="btn btn-secondary">Cambiar contraseña</button>
+          <button type="button" id="btn-refresh" class="btn btn-secondary">Actualizar galería</button>
+          <button type="button" id="btn-logout" class="btn btn-danger">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <div id="password-banner" class="password-banner" role="status">
+        <div>
+          <strong>Recomendación de seguridad:</strong> Estás usando la contraseña inicial. Cámbiala para proteger el
+          acceso al carrusel.
+        </div>
+        <button type="button" id="btn-banner-password" class="btn btn-primary">Cambiar contraseña ahora</button>
+      </div>
+
+      <div id="panel-alert" class="alert" role="status"></div>
+
+      <!-- Subir nueva imagen -->
+      <section class="card" aria-label="Agregar nueva imagen">
+        <h2>Agregar nueva imagen al carrusel</h2>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Seleccionar o arrastrar imagen">
+          <strong>Haz clic para seleccionar una imagen o arrástrala aquí</strong>
+          <div class="dropzone-hint">
+            Formatos permitidos: JPG, JPEG, PNG, WEBP, GIF · Tamaño máximo: <span id="max-size-label">10 MB</span>
+          </div>
+          <input
+            id="file-input"
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp,.gif"
+            style="display: none;"
+          />
+        </div>
+
+        <div id="upload-preview" class="upload-preview">
+          <div class="upload-preview-left">
+            <img id="preview-img" alt="Vista previa de imagen seleccionada" />
+            <div>
+              <div id="preview-name" style="font-weight: 700;"></div>
+              <div id="preview-size" style="font-size: 13px; color: #64748b;"></div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="btn-cancel-upload" class="btn btn-secondary">Cancelar</button>
+            <button type="button" id="btn-upload" class="btn btn-primary">Subir al carrusel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Galería de imágenes existentes -->
+      <section class="card" aria-label="Galería actual del carrusel">
+        <div class="gallery-header">
+          <h2 style="margin: 0;">Imágenes activas en el carrusel</h2>
+          <span id="gallery-count" class="count-badge">0 imágenes</span>
+        </div>
+        <div id="gallery-container" class="gallery-grid"></div>
+      </section>
+    </main>
+
+    <!-- Modal de confirmación antes de eliminar -->
+    <div id="delete-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+      <div class="modal-card">
+        <h3 id="delete-modal-title">Confirmar eliminación de imagen</h3>
+        <p style="margin: 0 0 8px; color: #475569; font-size: 14px;">
+          ¿Seguro que deseas eliminar esta imagen del carrusel? Dejará de mostrarse en todos los televisores.
+        </p>
+        <img id="delete-modal-img" class="modal-delete-preview" alt="Vista previa a eliminar" />
+        <div id="delete-modal-name" style="font-weight: 700; word-break: break-all; font-size: 14px;"></div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-delete" class="btn btn-secondary">Cancelar</button>
+          <button type="button" id="btn-confirm-delete" class="btn btn-danger">Sí, eliminar imagen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de cambio de contraseña -->
+    <div id="password-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pwd-modal-title">
+      <div class="modal-card">
+        <h3 id="pwd-modal-title">Cambiar contraseña del gestor</h3>
+        <div id="pwd-alert" class="alert"></div>
+        <form id="password-form">
+          <div class="form-group">
+            <label for="current-password">Contraseña actual</label>
+            <input id="current-password" type="password" required />
+          </div>
+          <div class="form-group">
+            <label for="new-password">Nueva contraseña (mínimo 8 caracteres)</label>
+            <input id="new-password" type="password" minlength="8" required />
+          </div>
+          <div class="form-group">
+            <label for="confirm-password">Confirmar nueva contraseña</label>
+            <input id="confirm-password" type="password" minlength="8" required />
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="btn-cancel-password" class="btn btn-secondary">Cancelar</button>
+            <button type="submit" id="btn-save-password" class="btn btn-primary">Guardar contraseña</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Lightbox de vista previa -->
+    <div id="lightbox-modal" class="modal-backdrop" role="dialog" aria-modal="true">
+      <div style="text-align: center;">
+        <img id="lightbox-img" class="lightbox-img" alt="Vista ampliada" />
+        <div id="lightbox-caption" style="color: #fff; margin-top: 10px; font-weight: 600;"></div>
+      </div>
+    </div>
+
+    <script is:inline>
+      (function () {
+        let csrfToken = '';
+        let currentUser = null;
+        let selectedFile = null;
+        let previewObjectUrl = null;
+        let pendingDeleteFilename = null;
+        let maxFileSizeBytes = 10 * 1024 * 1024;
+
+        const loginView = document.getElementById('login-view');
+        const panelView = document.getElementById('panel-view');
+        const loginAlert = document.getElementById('login-alert');
+        const panelAlert = document.getElementById('panel-alert');
+        const passwordBanner = document.getElementById('password-banner');
+
+        const fileInput = document.getElementById('file-input');
+        const dropzone = document.getElementById('dropzone');
+        const uploadPreview = document.getElementById('upload-preview');
+        const previewImg = document.getElementById('preview-img');
+        const previewName = document.getElementById('preview-name');
+        const previewSize = document.getElementById('preview-size');
+        const btnUpload = document.getElementById('btn-upload');
+
+        const galleryContainer = document.getElementById('gallery-container');
+        const galleryCount = document.getElementById('gallery-count');
+
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteModalImg = document.getElementById('delete-modal-img');
+        const deleteModalName = document.getElementById('delete-modal-name');
+        const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+
+        const passwordModal = document.getElementById('password-modal');
+        const pwdAlert = document.getElementById('pwd-alert');
+        const passwordForm = document.getElementById('password-form');
+
+        const lightboxModal = document.getElementById('lightbox-modal');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxCaption = document.getElementById('lightbox-caption');
+
+        function showAlert(el, msg, type = 'success') {
+          if (!el) return;
+          el.textContent = msg;
+          el.className = `alert show alert-${type}`;
+        }
+
+        function hideAlert(el) {
+          if (!el) return;
+          el.textContent = '';
+          el.className = 'alert';
+        }
+
+        function formatBytes(bytes) {
+          if (!Number.isFinite(bytes)) return '--';
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function formatDate(iso) {
+          if (!iso) return '--';
+          try {
+            return new Date(iso).toLocaleString('es-CO', {
+              timeZone: 'America/Bogota',
+              dateStyle: 'short',
+              timeStyle: 'short'
+            });
+          } catch {
+            return iso;
+          }
+        }
+
+        function showAuthenticatedUI(user) {
+          currentUser = user;
+          loginView.style.display = 'none';
+          panelView.style.display = 'block';
+          document.getElementById('meta-username').textContent = user.username || 'admin';
+          document.getElementById('meta-role').textContent = user.role || 'GESTOR_CARRUSEL';
+          passwordBanner.classList.toggle('show', Boolean(user.mustChangePassword));
+        }
+
+        function showLoginUI() {
+          currentUser = null;
+          csrfToken = '';
+          panelView.style.display = 'none';
+          loginView.style.display = 'flex';
+          galleryContainer.innerHTML = '';
+        }
+
+        function clearUploadSelection() {
+          selectedFile = null;
+          if (previewObjectUrl) {
+            URL.revokeObjectURL(previewObjectUrl);
+            previewObjectUrl = null;
+          }
+          fileInput.value = '';
+          uploadPreview.classList.remove('show');
+        }
+
+        function handleFileChosen(file) {
+          hideAlert(panelAlert);
+          if (!file) return;
+
+          const allowed = /\.(jpe?g|png|webp|gif)$/i;
+          if (!allowed.test(file.name)) {
+            showAlert(
+              panelAlert,
+              'Formato no permitido. Solo puedes subir imágenes JPG, JPEG, PNG, WEBP o GIF.',
+              'error'
+            );
+            clearUploadSelection();
+            return;
+          }
+
+          if (file.size > maxFileSizeBytes) {
+            showAlert(
+              panelAlert,
+              `La imagen supera el límite máximo permitido (${formatBytes(maxFileSizeBytes)}).`,
+              'error'
+            );
+            clearUploadSelection();
+            return;
+          }
+
+          selectedFile = file;
+          if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+          previewObjectUrl = URL.createObjectURL(file);
+          previewImg.src = previewObjectUrl;
+          previewName.textContent = file.name;
+          previewSize.textContent = formatBytes(file.size);
+          uploadPreview.classList.add('show');
+        }
+
+        function renderGallery(images) {
+          galleryContainer.innerHTML = '';
+          galleryCount.textContent = `${images.length} ${images.length === 1 ? 'imagen' : 'imágenes'}`;
+
+          if (!images || images.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.textContent = 'No hay imágenes en el carrusel. Agrega una imagen usando el formulario superior.';
+            galleryContainer.appendChild(empty);
+            return;
+          }
+
+          images.forEach((item) => {
+            const card = document.createElement('article');
+            card.className = 'img-card';
+
+            const thumbWrap = document.createElement('div');
+            thumbWrap.className = 'img-thumb-wrap';
+            thumbWrap.title = 'Haz clic para ampliar';
+
+            const img = document.createElement('img');
+            const cacheBuster = item.updatedAt ? `?v=${encodeURIComponent(item.updatedAt)}` : '';
+            img.src = `${item.url}${cacheBuster}`;
+            img.alt = item.filename;
+            img.loading = 'lazy';
+            thumbWrap.appendChild(img);
+
+            thumbWrap.addEventListener('click', () => {
+              lightboxImg.src = img.src;
+              lightboxCaption.textContent = item.filename;
+              lightboxModal.classList.add('show');
+            });
+
+            const body = document.createElement('div');
+            body.className = 'img-body';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'img-name';
+            nameEl.textContent = item.filename;
+            body.appendChild(nameEl);
+
+            const metaEl = document.createElement('div');
+            metaEl.className = 'img-meta';
+            const sizeSpan = document.createElement('span');
+            sizeSpan.textContent = `${String(item.ext || '').toUpperCase()} · ${formatBytes(item.sizeBytes)}`;
+            const dateSpan = document.createElement('span');
+            dateSpan.textContent = formatDate(item.updatedAt);
+            metaEl.appendChild(sizeSpan);
+            metaEl.appendChild(dateSpan);
+            body.appendChild(metaEl);
+
+            if (item.protectedHint) {
+              const badge = document.createElement('span');
+              badge.className = 'tag-protected';
+              badge.textContent = 'Recomendada / No Eliminar';
+              body.appendChild(badge);
+            }
+
+            const actions = document.createElement('div');
+            actions.className = 'img-actions';
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn btn-danger';
+            delBtn.textContent = 'Eliminar';
+            delBtn.addEventListener('click', () => {
+              pendingDeleteFilename = item.filename;
+              deleteModalImg.src = img.src;
+              deleteModalName.textContent = item.filename;
+              deleteModal.classList.add('show');
+            });
+
+            actions.appendChild(delBtn);
+            body.appendChild(actions);
+
+            card.appendChild(thumbWrap);
+            card.appendChild(body);
+            galleryContainer.appendChild(card);
+          });
+        }
+
+        async function loadGallery() {
+          const resp = await fetch(`/api/carousel-admin/images?t=${Date.now()}`, {
+            credentials: 'same-origin',
+            cache: 'no-store'
+          });
+
+          if (resp.status === 401 || resp.status === 403) {
+            showLoginUI();
+            return;
+          }
+
+          const data = await resp.json();
+          if (data.maxFileSizeBytes) {
+            maxFileSizeBytes = data.maxFileSizeBytes;
+            document.getElementById('max-size-label').textContent = formatBytes(maxFileSizeBytes);
+          }
+
+          if (data.success) {
+            renderGallery(data.images || []);
+          } else {
+            showAlert(panelAlert, data.error || 'Error cargando la galería.', 'error');
+          }
+        }
+
+        async function checkExistingSession() {
+          try {
+            const resp = await fetch(`/api/carousel-admin/me?t=${Date.now()}`, {
+              credentials: 'same-origin',
+              cache: 'no-store'
+            });
+            if (!resp.ok) {
+              showLoginUI();
+              return;
+            }
+            const data = await resp.json();
+            if (data.success && data.user) {
+              csrfToken = data.csrfToken || '';
+              showAuthenticatedUI(data.user);
+              await loadGallery();
+            } else {
+              showLoginUI();
+            }
+          } catch {
+            showLoginUI();
+          }
+        }
+
+        // Eventos Login
+        document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          hideAlert(loginAlert);
+          const btn = document.getElementById('btn-login');
+          btn.disabled = true;
+          btn.textContent = 'Verificando...';
+
+          try {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            const resp = await fetch('/api/carousel-admin/login', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+              showAlert(loginAlert, data.error || 'No fue posible iniciar sesión.', 'error');
+              return;
+            }
+
+            csrfToken = data.csrfToken || '';
+            document.getElementById('login-password').value = '';
+            showAuthenticatedUI(data.user);
+            await loadGallery();
+          } catch {
+            showAlert(loginAlert, 'Error de conexión con el servidor.', 'error');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'Ingresar al Gestor de Carrusel';
+          }
+        });
+
+        // Logout
+        document.getElementById('btn-logout')?.addEventListener('click', async () => {
+          try {
+            await fetch('/api/carousel-admin/logout', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'X-CSRF-Token': csrfToken }
+            });
+          } finally {
+            clearUploadSelection();
+            showLoginUI();
+          }
+        });
+
+        // Dropzone y selección de archivo
+        dropzone?.addEventListener('click', () => fileInput.click());
+        dropzone?.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+          }
+        });
+        dropzone?.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropzone.classList.add('dragover');
+        });
+        dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+        dropzone?.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('dragover');
+          const file = e.dataTransfer?.files?.[0];
+          if (file) handleFileChosen(file);
+        });
+
+        fileInput?.addEventListener('change', () => {
+          const file = fileInput.files?.[0];
+          if (file) handleFileChosen(file);
+        });
+
+        document.getElementById('btn-cancel-upload')?.addEventListener('click', clearUploadSelection);
+
+        // Subir imagen
+        btnUpload?.addEventListener('click', async () => {
+          if (!selectedFile) return;
+          hideAlert(panelAlert);
+          btnUpload.disabled = true;
+          btnUpload.textContent = 'Subiendo...';
+
+          try {
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            const resp = await fetch('/api/carousel-admin/images', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'X-CSRF-Token': csrfToken },
+              body: formData
+            });
+            const data = await resp.json();
+
+            if (!resp.ok || !data.success) {
+              showAlert(panelAlert, data.error || 'Error al subir la imagen.', 'error');
+              return;
+            }
+
+            clearUploadSelection();
+            await loadGallery();
+            showAlert(panelAlert, data.message || 'Imagen agregada correctamente al carrusel.', 'success');
+          } catch {
+            showAlert(panelAlert, 'Error de red subiendo la imagen.', 'error');
+          } finally {
+            btnUpload.disabled = false;
+            btnUpload.textContent = 'Subir al carrusel';
+          }
+        });
+
+        // Refrescar galería
+        document.getElementById('btn-refresh')?.addEventListener('click', async () => {
+          hideAlert(panelAlert);
+          await loadGallery();
+          showAlert(panelAlert, 'Galería actualizada.', 'success');
+        });
+
+        // Confirmación de borrado
+        document.getElementById('btn-cancel-delete')?.addEventListener('click', () => {
+          pendingDeleteFilename = null;
+          deleteModal.classList.remove('show');
+        });
+
+        btnConfirmDelete?.addEventListener('click', async () => {
+          if (!pendingDeleteFilename) return;
+          btnConfirmDelete.disabled = true;
+          btnConfirmDelete.textContent = 'Eliminando...';
+
+          try {
+            const resp = await fetch(
+              `/api/carousel-admin/images/${encodeURIComponent(pendingDeleteFilename)}`,
+              {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: { 'X-CSRF-Token': csrfToken }
+              }
+            );
+            const data = await resp.json();
+            deleteModal.classList.remove('show');
+            pendingDeleteFilename = null;
+
+            if (!resp.ok || !data.success) {
+              showAlert(panelAlert, data.error || 'No se pudo eliminar la imagen.', 'error');
+              return;
+            }
+
+            await loadGallery();
+            showAlert(panelAlert, data.message || 'Imagen eliminada correctamente.', 'success');
+          } catch {
+            deleteModal.classList.remove('show');
+            showAlert(panelAlert, 'Error de red eliminando la imagen.', 'error');
+          } finally {
+            btnConfirmDelete.disabled = false;
+            btnConfirmDelete.textContent = 'Sí, eliminar imagen';
+          }
+        });
+
+        // Cambio de contraseña
+        function openPasswordModal() {
+          hideAlert(pwdAlert);
+          passwordForm.reset();
+          passwordModal.classList.add('show');
+        }
+
+        document.getElementById('btn-open-password')?.addEventListener('click', openPasswordModal);
+        document.getElementById('btn-banner-password')?.addEventListener('click', openPasswordModal);
+        document.getElementById('btn-cancel-password')?.addEventListener('click', () => {
+          passwordModal.classList.remove('show');
+        });
+
+        passwordForm?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          hideAlert(pwdAlert);
+
+          const currentPassword = document.getElementById('current-password').value;
+          const newPassword = document.getElementById('new-password').value;
+          const confirmPassword = document.getElementById('confirm-password').value;
+
+          if (newPassword !== confirmPassword) {
+            showAlert(pwdAlert, 'La confirmación no coincide con la nueva contraseña.', 'error');
+            return;
+          }
+
+          const saveBtn = document.getElementById('btn-save-password');
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Guardando...';
+
+          try {
+            const resp = await fetch('/api/carousel-admin/change-password', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+              },
+              body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+              showAlert(pwdAlert, data.error || 'Error actualizando contraseña.', 'error');
+              return;
+            }
+
+            passwordModal.classList.remove('show');
+            passwordBanner.classList.remove('show');
+            if (currentUser) currentUser.mustChangePassword = false;
+            showAlert(panelAlert, data.message || 'Contraseña actualizada correctamente.', 'success');
+          } catch {
+            showAlert(pwdAlert, 'Error de red actualizando contraseña.', 'error');
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Guardar contraseña';
+          }
+        });
+
+        // Cerrar lightbox al hacer clic fuera
+        lightboxModal?.addEventListener('click', () => {
+          lightboxModal.classList.remove('show');
+        });
+
+        document.addEventListener('DOMContentLoaded', checkExistingSession);
+      })();
+    </script>
+  </body>
+</html>

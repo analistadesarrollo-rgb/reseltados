@@ -243,12 +243,15 @@
       }
     }
 
-    async function obtenerDatosActualizados() {
-      if (fetchInFlight) return;
+    async function obtenerDatosActualizados(options = {}) {
+      if (fetchInFlight) return null;
       fetchInFlight = true;
 
       try {
-        const query = lastDataHash ? `?hash=${encodeURIComponent(lastDataHash)}&t=${Date.now()}` : `?t=${Date.now()}`;
+        const checkParam = options.checkSync ? '&checkSync=1' : '';
+        const query = lastDataHash
+          ? `?hash=${encodeURIComponent(lastDataHash)}&t=${Date.now()}${checkParam}`
+          : `?t=${Date.now()}${checkParam}`;
         const response = await fetch(`/api/datos${query}`, {
           method: 'GET',
           cache: 'no-store',
@@ -284,9 +287,13 @@
             actualizarResultados(payload.data);
             lastDataHash = payload.hash || JSON.stringify(payload.data);
           }
+
+          return payload;
         }
+        return null;
       } catch (err) {
         console.warn('Interrupción temporal consultando /api/datos, conservando datos en pantalla:', err.message);
+        return null;
       } finally {
         fetchInFlight = false;
       }
@@ -402,7 +409,8 @@
         slide.className = 'carousel-slide' + (index === 0 ? ' active' : '');
 
         const img = document.createElement('img');
-        img.src = `/img/carousel/${encodeURIComponent(image)}`;
+        const versionTag = imageMetadata[image] ? `?v=${encodeURIComponent(imageMetadata[image])}` : '';
+        img.src = `/img/carousel/${encodeURIComponent(image)}${versionTag}`;
         img.alt = `Comercial ${index + 1}`;
         img.loading = 'lazy';
         img.onerror = function () {
@@ -428,7 +436,7 @@
 
     async function showSingleImage() {
       const updated = await fetchCarouselImages();
-      if (updated && updated.length > 0) {
+      if (Array.isArray(updated)) {
         if (!arraysEqual(carouselImages, updated)) {
           carouselImages = updated;
           createCarouselDOM();
@@ -483,7 +491,12 @@
 
       initNormasSlider();
 
-      await obtenerDatosActualizados();
+      const initialPayload = await obtenerDatosActualizados({ checkSync: true });
+      if (initialPayload && initialPayload.syncCheck && (initialPayload.syncCheck.triggered || initialPayload.syncCheck.inProgress)) {
+        setTimeout(() => {
+          obtenerDatosActualizados();
+        }, 15000);
+      }
       setInterval(obtenerDatosActualizados, 30000);
 
       const initialImages = await fetchCarouselImages();

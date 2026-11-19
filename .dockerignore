@@ -9,6 +9,9 @@ frontend/.astro
 .git
 .gitignore
 *.log
+*.tmp
+data
+backend/data
 docs
 README.md
 Jenkinsfile

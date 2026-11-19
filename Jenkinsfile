@@ -52,7 +52,7 @@ pipeline {
     stage('Stop Previous Project Containers') {
       steps {
         script {
-          echo "Deteniendo contenedores previos de ${PROJECT_NAME} (sin afectar otros proyectos ni volúmenes)..."
+          echo "Deteniendo contenedores previos de ${PROJECT_NAME} (conservando volúmenes persistentes resultados_astro_carousel y resultados_astro_data)..."
           sh 'docker compose -p resultados-astro down --remove-orphans || true'
         }
       }
@@ -70,7 +70,7 @@ pipeline {
     stage('Verify Containers & Health Endpoint') {
       steps {
         script {
-          echo "Verificando estado de contenedores y endpoint /health..."
+          echo "Verificando estado de contenedores, persistencia y endpoint /health..."
           sh """
             sleep 5
             docker ps --filter "name=${API_CONTAINER}" --filter "status=running" | grep ${API_CONTAINER}
@@ -78,6 +78,10 @@ pipeline {
 
             # Verificar endpoint /health internamente en el contenedor backend
             docker exec ${API_CONTAINER} node -e "fetch('http://127.0.0.1:3000/health').then(r=>r.json()).then(d=>{console.log('Health API:', JSON.stringify(d)); if(d.status!=='ok') process.exit(1);}).catch(e=>{console.error(e); process.exit(1);})"
+
+            # Verificar volúmenes persistentes compartidos entre backend y frontend
+            docker exec ${API_CONTAINER} sh -c "test -w /app/carousel && test -w /app/data && ls -1 /app/carousel | wc -l"
+            docker exec ${WEB_CONTAINER} sh -c "test -d /usr/share/nginx/html/img/carousel && ls -1 /usr/share/nginx/html/img/carousel | wc -l"
           """
         }
       }

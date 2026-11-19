@@ -24,10 +24,16 @@ export async function healthRoutes(fastify) {
         externalPowerBiDatabase: dbs.powerBiDb
       },
       sync: {
-        inProgress: sync.syncInProgress,
+        inProgress: sync.inProgress,
         lastRunAt: sync.lastRunAt,
+        lastSuccessAt: sync.lastSuccessAt,
+        lastPowerBiSyncAt: sync.lastPowerBiSyncAt,
+        nextScheduledAt: sync.nextScheduledAt,
         lastStatus: sync.status,
-        lastPowerBiSyncedCount: sync.powerBiSyncedCount
+        durationMs: sync.durationMs,
+        powerBiPendingRetry: sync.powerBiPendingRetry,
+        lastPowerBiSyncedCount: sync.powerBiSyncedCount,
+        databases: sync.databases
       }
     };
   };
@@ -37,4 +43,6 @@ export async function healthRoutes(fastify) {
 
   fastify.get('/health/dependencies', dependenciesHandler);
   fastify.get('/api/health/dependencies', dependenciesHandler);
+  fastify.get('/health/db', dependenciesHandler);
+  fastify.get('/api/health/db', dependenciesHandler);
 }

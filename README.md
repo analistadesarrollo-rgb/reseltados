@@ -51,21 +51,24 @@ resultados_astro/
 | `/androidtv/` | Variante para Android TV con solicitud automática de pantalla completa |
 | `/panel-validacion/` | Panel de validación, diagnóstico de BD, métricas y disparo manual de sincronización |
 | `/admin/` | Panel administrativo para edición manual de acumulados (con sincronización automática a PowerBI) |
+| `/carrusel-admin/` | Consola independiente para usuario restringido (`GESTOR_CARRUSEL`) de imágenes del carrusel |
 
 ## Endpoints del Backend
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/health` y `/api/health` | Healthcheck HTTP (`{"status":"ok"}`) para Docker y Nginx Proxy Manager |
-| `GET` | `/api/health/db` | Diagnóstico de conectividad de BD Principal, Auth y PowerBI |
-| `GET` | `/api/datos?hash=...` | Datos completos del tablero (con detección de cambios por SHA-1) |
+| `GET` | `/api/health/db` | Diagnóstico de conectividad de BD Principal y PowerBI |
+| `GET` | `/api/datos?hash=...&checkSync=1` | Datos completos del tablero + evaluación automática de sincronización |
 | `GET` | `/api/resultados` | Últimos resultados por código de lotería |
 | `GET` | `/api/time` | Fecha, hora y día de la semana sincronizados en `America/Bogota` |
 | `GET` | `/api/carousel-images` | Listado dinámico de imágenes del carrusel comercial |
-| `GET` | `/api/sync/status` | Estado de la última sincronización y próximo ciclo |
-| `POST` | `/api/sync` | Ejecuta sincronización manual (protegido por `X-Sync-Token`) |
-| `POST` | `/api/admin/login` | Autenticación contra `bdpersona.usuario` (hash MD5 compatible) |
+| `GET` | `/api/sync/status` | Estado de la última sincronización, PowerBI, errores e historial |
+| `GET` / `POST` | `/api/sync/check-due` | Evalúa en servidor si corresponde sincronizar según intervalo |
+| `POST` | `/api/sync` y `/api/sync/retry-powerbi` | Ejecuta sincronización manual o reintento PowerBI pendiente |
+| `POST` | `/api/admin/login` | Autenticación contra `bdpersona.tbusuario` |
 | `GET` / `PUT` | `/api/admin/acumulados` | Consulta y actualización manual de acumulados + sincronización a `POWERBI.INFORESULTADOS` |
+| `*` | `/api/carousel-admin/*` | Login, sesión HttpOnly, CSRF, subida, listado y borrado exclusivo del carrusel (`GESTOR_CARRUSEL`) |
 
 ## Ejecución local rápida
 
@@ -98,3 +101,4 @@ resultados_astro/
 - [Arquitectura del Nuevo Sistema](docs/ARQUITECTURA.md)
 - [Diagnóstico y Solución de la BD Externa (`POWERBI.INFORESULTADOS`)](docs/SOLUCION_BD_EXTERNA_POWERBI.md)
 - [Guía de Despliegue en Producción (Docker, Nginx y Jenkins)](docs/DESPLIEGUE_PRODUCCION.md)
+- [Gestión Restringida del Carrusel y Actualización Automática](docs/GESTION_CARRUSEL_Y_SYNC_AUTO.md)

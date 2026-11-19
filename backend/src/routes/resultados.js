@@ -5,6 +5,7 @@ import {
   obtenerDatosCompletos,
   obtenerResultadosAcumulados
 } from '../services/resultadosService.js';
+import { evaluarYEjecutarSincronizacionSiCorresponde } from '../services/syncPowerBiService.js';
 
 function setNoCacheHeaders(reply) {
   reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -13,9 +14,22 @@ function setNoCacheHeaders(reply) {
 }
 
 export async function resultadosRoutes(fastify) {
-  // 1. Tablero completo (equivalente a obtener_datos.php)
+  // 1. Tablero completo (equivalente a obtener_datos.php) + evaluación opcional al abrir TV/URL pública
   const datosHandler = async (request, reply) => {
     setNoCacheHeaders(reply);
+
+    let syncCheck = null;
+    if (request.query?.checkSync === '1') {
+      try {
+        syncCheck = await evaluarYEjecutarSincronizacionSiCorresponde({
+          trigger: 'public_visit',
+          blocking: false
+        });
+      } catch {
+        // Nunca bloquear la carga del tablero si falla la evaluación automática
+      }
+    }
+
     const clientHash = request.query?.hash;
     const result = await obtenerDatosCompletos();
 
@@ -26,11 +40,15 @@ export async function resultadosRoutes(fastify) {
         hash: result.hash,
         fechas: result.fechas,
         timestamp: result.timestamp,
-        fecha_consulta: result.fecha_consulta
+        fecha_consulta: result.fecha_consulta,
+        ...(syncCheck ? { syncCheck } : {})
       };
     }
 
-    return result;
+    return {
+      ...result,
+      ...(syncCheck ? { syncCheck } : {})
+    };
   };
 
   fastify.get('/datos', datosHandler);

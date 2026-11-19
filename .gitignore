@@ -15,11 +15,14 @@ frontend/.astro/
 frontend/.env
 backend/.env
 
-# Logs y archivos temporales
+# Logs, datos en ejecución y archivos temporales
 *.log
 npm-debug.log*
 baloto_log.txt
 tmp_*.html
+*.tmp
+backend/data/
+data/
 
 # Sistema operativo y editores
 .DS_Store

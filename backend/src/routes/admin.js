@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { getAuthPool, getMainPool, sanitizeDbError } from '../config/db.js';
 import { env, getBogotaDateParts } from '../config/env.js';
+import { getCarouselSessionFromRequest } from '../services/carouselAuthService.js';
 import { sincronizarAcumuladosActualesAPowerBi } from '../services/syncPowerBiService.js';
 
 const TOKEN_SECRET = env.sync.syncApiToken || 'resultados-astro-secret-key';
@@ -11,6 +12,7 @@ export function createAdminToken(user) {
       id: user.id,
       login: user.login,
       nombre: user.nombre,
+      role: 'ADMIN_RESULTADOS',
       exp: Date.now() + 8 * 3600 * 1000
     })
   ).toString('base64url');
@@ -27,19 +29,28 @@ export function verifyAdminToken(token) {
   try {
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
     if (!data.exp || data.exp < Date.now()) return null;
+    if (data.role !== 'ADMIN_RESULTADOS') return null;
     return data;
   } catch {
     return null;
   }
 }
 
-function requireAdminAuth(request, reply) {
+async function requireAdminAuth(request, reply) {
   const authHeader = request.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ')
     ? authHeader.slice(7).trim()
     : request.headers['x-admin-token'] || '';
   const user = verifyAdminToken(token);
   if (!user) {
+    const carouselSession = await getCarouselSessionFromRequest(request);
+    if (carouselSession) {
+      reply.code(403).send({
+        success: false,
+        error: 'Acceso denegado: el rol GESTOR_CARRUSEL solo tiene permisos para administrar imágenes del carrusel.'
+      });
+      return null;
+    }
     reply.code(401).send({ success: false, error: 'Sesión administrativa inválida o expirada' });
     return null;
   }
@@ -96,7 +107,7 @@ export async function adminRoutes(fastify) {
 
   // 2. Listar registros de acumulados (reemplaza login_down/editar/index.php)
   const listAcumuladosHandler = async (request, reply) => {
-    if (!requireAdminAuth(request, reply)) return;
+    if (!(await requireAdminAuth(request, reply))) return;
     const pool = getMainPool();
     const [rows] = await pool.query('SELECT * FROM acumulados ORDER BY id DESC');
     return { success: true, rows };
@@ -107,7 +118,7 @@ export async function adminRoutes(fastify) {
 
   // 3. Actualizar valores de acumulados (reemplaza login_down/editar/update.php + sincroniza PowerBI)
   const updateAcumuladosHandler = async (request, reply) => {
-    if (!requireAdminAuth(request, reply)) return;
+    if (!(await requireAdminAuth(request, reply))) return;
 
     const id = Number.parseInt(String(request.body?.id || '1'), 10);
     const acum_3cifras = String(request.body?.acum_3cifras ?? '').trim();
@@ -148,7 +159,7 @@ export async function adminRoutes(fastify) {
 
   // 4. Actualizar balotas de Baloto (reemplaza login_down/editar/update2.php + sincroniza PowerBI)
   const updateBalotoHandler = async (request, reply) => {
-    if (!requireAdminAuth(request, reply)) return;
+    if (!(await requireAdminAuth(request, reply))) return;
 
     const id = Number.parseInt(String(request.body?.id || '1'), 10);
     const balls = [
@@ -191,7 +202,7 @@ export async function adminRoutes(fastify) {
 
   // 5. Actualizar balotas de Revancha (reemplaza login_down/editar/update3.php + sincroniza PowerBI)
   const updateRevanchaHandler = async (request, reply) => {
-    if (!requireAdminAuth(request, reply)) return;
+    if (!(await requireAdminAuth(request, reply))) return;
 
     const id = Number.parseInt(String(request.body?.id || '1'), 10);
     const balls = [

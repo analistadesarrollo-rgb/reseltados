@@ -75,6 +75,18 @@
         opacity: 0.65;
         cursor: not-allowed;
       }
+      .btn-retry {
+        background: #d97706;
+        color: #ffffff;
+        border: none;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-right: 8px;
+        display: none;
+      }
       .grid-2 {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -92,6 +104,7 @@
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
         overflow: hidden;
+        margin-bottom: 20px;
       }
       .card-header {
         padding: 14px 20px;
@@ -155,6 +168,25 @@
         overflow-y: auto;
         white-space: pre-wrap;
       }
+      .meta-list p {
+        margin: 6px 0;
+        font-size: 14px;
+      }
+      .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .history-table th,
+      .history-table td {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 8px 10px;
+        text-align: left;
+      }
+      .history-table th {
+        color: #475569;
+        font-weight: 700;
+      }
     </style>
   </head>
   <body>
@@ -173,8 +205,11 @@
           </span>
         </div>
         <div>
+          <button id="btnRetryPowerBi" class="btn-retry" type="button">
+            Reintentar PowerBI Pendiente
+          </button>
           <button id="btnActualizar" class="btn-sync" type="button">
-            Actualizar y Sincronizar Ahora
+            Actualizar ahora
           </button>
         </div>
       </div>
@@ -243,17 +278,25 @@
       <div class="grid-2">
         <div class="card">
           <div class="card-header header-dark">MiLoto (Código 245) y ColorLOTO (Código 273)</div>
-          <div class="card-body">
+          <div class="card-body meta-list">
             <p><strong>MiLoto (245):</strong> <span id="miloto_res">--</span></p>
             <p><strong>ColorLOTO (273):</strong> <span id="colorloto_res">--</span></p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 12px 0;" />
+            <p><strong>BD Principal (chatbot):</strong> <span id="db_main_status">--</span></p>
+            <p><strong>BD Externa PowerBI (INFORESULTADOS):</strong> <span id="db_powerbi_status">--</span></p>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-header header-dark">Estado Sincronización PowerBI (INFORESULTADOS)</div>
-          <div class="card-body">
-            <p><strong>Última sincronización:</strong> <span id="sync_last_run">--</span></p>
-            <p><strong>Registros sincronizados:</strong> <span id="sync_count">--</span></p>
+          <div class="card-header header-dark">Estado de Sincronización Automática y PowerBI</div>
+          <div class="card-body meta-list">
+            <p><strong>Estado general:</strong> <span id="sync_status_text">--</span></p>
+            <p><strong>Última ejecución:</strong> <span id="sync_last_run">--</span> (<span id="sync_trigger">--</span>)</p>
+            <p><strong>Última actualización exitosa:</strong> <span id="sync_last_success">--</span></p>
+            <p><strong>Última sincronización PowerBI:</strong> <span id="sync_last_powerbi">--</span></p>
+            <p><strong>Próxima actualización (America/Bogota):</strong> <span id="sync_next_run">--</span></p>
+            <p><strong>Registros sincronizados / verificados:</strong> <span id="sync_count">--</span></p>
+            <p><strong>Duración último proceso:</strong> <span id="sync_duration">--</span></p>
           </div>
         </div>
       </div>
@@ -264,11 +307,41 @@
           <div class="log-box" id="sync_logs">Cargando estado del sistema...</div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-header header-dark">Historial Reciente de Ejecuciones</div>
+        <div class="card-body" style="overflow-x: auto;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Origen</th>
+                <th>Estado</th>
+                <th>Duración</th>
+                <th>PowerBI</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody id="sync_history_body">
+              <tr><td colspan="6" style="color: #64748b;">Cargando historial...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <script is:inline>
       let ejecutandoActualizacion = false;
       let contadorActualizaciones = 0;
+
+      const STATUS_LABELS = {
+        idle: 'En espera',
+        running: 'En ejecución',
+        completed: 'Completada',
+        partial: 'Completada (parcial)',
+        main_db_error: 'Error en BD Principal',
+        powerbi_db_error: 'Error en BD PowerBI (Pendiente)'
+      };
 
       async function cargarResultados() {
         try {
@@ -318,11 +391,68 @@
           }
 
           if (syncData && syncData.success) {
+            document.getElementById('sync_status_text').textContent =
+              STATUS_LABELS[syncData.status] || syncData.status || '--';
             document.getElementById('sync_last_run').textContent = syncData.lastRunAt || '--';
+            document.getElementById('sync_trigger').textContent = syncData.lastTrigger || '--';
+            document.getElementById('sync_last_success').textContent = syncData.lastSuccessAt || '--';
+            document.getElementById('sync_last_powerbi').textContent = syncData.lastPowerBiSyncAt || '--';
+            document.getElementById('sync_next_run').textContent = syncData.nextScheduledAt || '--';
             document.getElementById('sync_count').textContent =
-              syncData.powerBiSyncedCount !== undefined ? `${syncData.powerBiSyncedCount} códigos` : '--';
+              syncData.powerBiSyncedCount !== undefined
+                ? `${syncData.powerBiSyncedCount} sincronizados / ${syncData.powerBiVerifiedCount ?? syncData.powerBiSyncedCount} verificados`
+                : '--';
+            document.getElementById('sync_duration').textContent =
+              syncData.durationMs !== null && syncData.durationMs !== undefined ? `${syncData.durationMs} ms` : '--';
+
+            const mainDb = syncData.databases?.mainDb || {};
+            const powerBiDb = syncData.databases?.powerBiDb || {};
+            document.getElementById('db_main_status').textContent =
+              mainDb.status === 'ok' ? 'OK (actualizada)' : mainDb.error || mainDb.status || '--';
+            document.getElementById('db_powerbi_status').textContent =
+              powerBiDb.status === 'ok'
+                ? `OK (${powerBiDb.verifiedCount ?? 0} verificados)`
+                : powerBiDb.error || powerBiDb.status || '--';
+
+            const retryBtn = document.getElementById('btnRetryPowerBi');
+            if (retryBtn) {
+              retryBtn.style.display = syncData.powerBiPendingRetry ? 'inline-block' : 'none';
+            }
+
             if (Array.isArray(syncData.logs) && syncData.logs.length > 0) {
               document.getElementById('sync_logs').textContent = syncData.logs.join('\n');
+            }
+
+            const tbody = document.getElementById('sync_history_body');
+            if (tbody) {
+              tbody.innerHTML = '';
+              const hist = Array.isArray(syncData.history) ? syncData.history : [];
+              if (hist.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 6;
+                td.textContent = 'Sin ejecuciones registradas aún.';
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+              } else {
+                hist.slice(0, 10).forEach((item) => {
+                  const tr = document.createElement('tr');
+                  const cols = [
+                    item.runAt || '--',
+                    item.trigger || '--',
+                    STATUS_LABELS[item.status] || item.status || '--',
+                    item.durationMs !== undefined ? `${item.durationMs} ms` : '--',
+                    `${item.powerBiSyncedCount ?? 0} / ${item.powerBiVerifiedCount ?? 0}`,
+                    Array.isArray(item.errors) && item.errors.length > 0 ? item.errors.join('; ') : 'Sin errores'
+                  ];
+                  cols.forEach((val) => {
+                    const td = document.createElement('td');
+                    td.textContent = val;
+                    tr.appendChild(td);
+                  });
+                  tbody.appendChild(tr);
+                });
+              }
             }
           }
         } catch (err) {
@@ -352,7 +482,10 @@
           });
 
           const resJson = await response.json();
-          if (response.ok && resJson.success) {
+          if (resJson.alreadyRunning) {
+            badge.textContent = 'Sincronización ya en ejecución';
+            badge.className = 'badge bg-primary';
+          } else if (response.ok && resJson.success) {
             badge.textContent = `Sincronización Exitosa #${contadorActualizaciones}`;
             badge.className = 'badge bg-success';
           } else {
@@ -368,12 +501,36 @@
           ejecutandoActualizacion = false;
           document.getElementById('contadorExtracciones').textContent = String(contadorActualizaciones);
           btn.disabled = false;
-          btn.textContent = 'Actualizar y Sincronizar Ahora';
+          btn.textContent = 'Actualizar ahora';
+        }
+      }
+
+      async function reintentarPowerBi() {
+        const retryBtn = document.getElementById('btnRetryPowerBi');
+        const badge = document.getElementById('estadoConexion');
+        retryBtn.disabled = true;
+        retryBtn.textContent = 'Reintentando PowerBI...';
+        try {
+          const resp = await fetch('/api/sync/retry-powerbi?t=' + Date.now(), {
+            method: 'POST',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          const data = await resp.json();
+          badge.textContent = data.success ? 'PowerBI Recuperado' : 'Reintento PowerBI con error';
+          badge.className = data.success ? 'badge bg-success' : 'badge bg-danger';
+          await cargarResultados();
+        } finally {
+          retryBtn.disabled = false;
+          retryBtn.textContent = 'Reintentar PowerBI Pendiente';
         }
       }
 
       document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btnActualizar')?.addEventListener('click', ejecutarExtraccionDatos);
+        document.getElementById('btnRetryPowerBi')?.addEventListener('click', reintentarPowerBi);
         cargarResultados();
       });
     </script>

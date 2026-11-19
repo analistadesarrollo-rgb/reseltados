@@ -77,13 +77,40 @@ export const env = {
     autoSyncIntervalMs: Number.parseInt(process.env.AUTO_SYNC_INTERVAL_MS || '3600000', 10),
     autoSyncOnStartup: process.env.AUTO_SYNC_ON_STARTUP !== 'false',
     syncApiToken: process.env.SYNC_API_TOKEN || '',
-    versionTag: process.env.SYNC_VERSION_TAG || 'WS-SCRAPER-2.0'
+    versionTag: process.env.SYNC_VERSION_TAG || 'WS-SCRAPER-2.0',
+    lockTtlMs: Number.parseInt(process.env.SYNC_LOCK_TTL_MS || '180000', 10),
+    powerBiRetryCooldownMs: Number.parseInt(process.env.POWERBI_RETRY_COOLDOWN_MS || '300000', 10),
+    schedulerTickMs: Number.parseInt(process.env.SYNC_SCHEDULER_TICK_MS || '60000', 10)
+  },
+
+  storage: {
+    appDataDir: process.env.APP_DATA_DIR || './data'
   },
 
   carousel: {
-    imagesDir: process.env.CAROUSEL_IMAGES_DIR || '../frontend/public/img/carousel'
+    imagesDir: process.env.CAROUSEL_IMAGES_DIR || '../frontend/public/img/carousel',
+    seedDir: process.env.CAROUSEL_SEED_DIR || '../frontend/public/img/carousel',
+    maxFileSizeBytes: Number.parseInt(process.env.CAROUSEL_MAX_FILE_SIZE_BYTES || '10485760', 10)
+  },
+
+  carouselAdmin: {
+    initialUser: process.env.CAROUSEL_ADMIN_INITIAL_USER || 'admin',
+    initialPassword: process.env.CAROUSEL_ADMIN_INITIAL_PASSWORD || '',
+    requirePasswordChange: process.env.CAROUSEL_ADMIN_REQUIRE_PASSWORD_CHANGE !== 'false',
+    sessionTtlMs: Number.parseInt(process.env.CAROUSEL_SESSION_TTL_MS || '28800000', 10),
+    loginMaxAttempts: Number.parseInt(process.env.CAROUSEL_LOGIN_MAX_ATTEMPTS || '5', 10),
+    loginWindowMs: Number.parseInt(process.env.CAROUSEL_LOGIN_WINDOW_MS || '900000', 10),
+    cookieSecure: process.env.COOKIE_SECURE || 'auto'
   }
 };
+
+/**
+ * Resuelve el directorio persistente de datos de la aplicación (usuarios del carrusel, sesiones, locks, estado de sync)
+ */
+export function resolveDataDir() {
+  const backendRoot = resolve(__dirname, '../..');
+  return resolve(backendRoot, env.storage.appDataDir);
+}
 
 /**
  * Obtiene la fecha y hora actuales formateadas en zona horaria America/Bogota

@@ -18,43 +18,47 @@ Características obligatorias implementadas:
 
 ## 2. Variables de entorno (`.env`)
 
-Cree el archivo `.env` en el servidor (nunca lo suba a Git) a partir de `.env.example`:
+Cree el archivo `.env` en el servidor (nunca lo suba a Git) o actualice el Secret file **`ENV_RESULTADOS_ASTRO`** en Jenkins a partir de `.env.example`:
 
-- `IMAGE_TAG` (ej. `v2.0`)
-- `TZ=America/Bogota`
-- `PORT=3000`
-- `MAIN_DB_HOST`, `MAIN_DB_PORT`, `MAIN_DB_USER`, `MAIN_DB_PASSWORD`, `MAIN_DB_NAME`
-- `AUTH_DB_HOST`, `AUTH_DB_PORT`, `AUTH_DB_USER`, `AUTH_DB_PASSWORD`, `AUTH_DB_NAME`
-- `POWERBI_DB_HOST`, `POWERBI_DB_PORT`, `POWERBI_DB_USER`, `POWERBI_DB_PASSWORD`, `POWERBI_DB_NAME`
-- `INTERNAL_RESULTS_API_URL=http://172.20.1.221:7080/api/v1/resultados`
+- `TZ=America/Bogota`, `PORT=3000`, `HOST=0.0.0.0`, `NODE_ENV=production`
+- `DB_MAIN_*`, `DB_AUTH_*`, `DB_POWERBI_*`
+- `API_RESULTADOS_BASE_URL=http://172.20.1.221:7080/api/v1/resultados`
 - `SYNC_API_TOKEN` (token secreto para autorizar `POST /api/sync`)
-- `AUTO_SYNC_ENABLED=true`
-- `AUTO_SYNC_INTERVAL_MS=3600000`
-- `SCRAPER_ALLOW_INSECURE_TLS=true`
+- `AUTO_SYNC_ENABLED=true`, `AUTO_SYNC_INTERVAL_MS=3600000`, `AUTO_SYNC_ON_STARTUP=true`
+- `SYNC_LOCK_TTL_MS=180000`, `POWERBI_RETRY_COOLDOWN_MS=300000`, `SYNC_SCHEDULER_TICK_MS=60000`
+- `CAROUSEL_MAX_FILE_SIZE_BYTES=10485760`, `CAROUSEL_ADMIN_INITIAL_USER=admin`
+- `CAROUSEL_ADMIN_INITIAL_PASSWORD` (contraseña inicial del gestor de imágenes; nunca en Git)
+- `CAROUSEL_ADMIN_REQUIRE_PASSWORD_CHANGE=true`, `COOKIE_SECURE=auto`
 
-## 3. Pipeline de Jenkins (`Jenkinsfile`)
+## 3. Volúmenes persistentes y Pipeline de Jenkins (`Jenkinsfile`)
+
+`docker-compose.yml` define dos volúmenes nombrados persistentes:
+- `resultados_astro_carousel`: compartido entre `resultados-astro-api` (`/app/carousel`, rw) y `resultados-astro-web` (`/usr/share/nginx/html/img/carousel`, ro). Sembrado por única vez al primer arranque desde `/app/carousel-seed`.
+- `resultados_astro_data`: almacenado en `resultados-astro-api` (`/app/data`, rw) para conservar usuario `admin`, sesiones, estado de sincronización y bloqueos.
 
 El `Jenkinsfile` automatiza las siguientes etapas:
-1. **Checkout** del repositorio.
-2. **Verificación de entorno** (`.env`, existencia de red Docker `red-gane-int`).
-3. **Build de imágenes** Docker (`resultados-astro-api` y `resultados-astro-web`) con etiqueta `v2.0` / `BUILD_NUMBER`.
-4. **Despliegue con Docker Compose** (`docker compose up -d --remove-orphans`).
-5. **Verificación post-despliegue** (`docker exec resultados-astro-api wget -qO- http://127.0.0.1:3000/health` y validación HTTP interna de `resultados-astro-web`).
+1. **Prepare Environment (`.env`)** desde credencial `ENV_RESULTADOS_ASTRO`.
+2. **Verify External Docker Network** (`red-gane-int`).
+3. **Build Docker Images** (`resultados-astro-api:v2.0` y `resultados-astro-web:v2.0`).
+4. **Stop Previous Project Containers** (`down --remove-orphans` sin `-v` para conservar volúmenes).
+5. **Deploy with Docker Compose** (`up -d`).
+6. **Verify Containers, Volúmenes y `/health`**.
 
 ## 4. Configuración en Nginx Proxy Manager (NPM)
 
 En el panel de Nginx Proxy Manager conectado a la red `red-gane-int`:
-1. Cree o edite el **Proxy Host** del dominio asignado (ej. `resultados.midominio.com`).
+1. Cree o edite el **Proxy Host** del dominio asignado (`resultados.serviredgane.cloud`).
 2. **Scheme**: `http`
 3. **Forward Hostname / IP**: `resultados-astro-web`
 4. **Forward Port**: `80`
-5. Active **Block Common Exploits** y configure el certificado SSL/TLS (Let's Encrypt o corporativo) si aplica.
+5. Desactive **Cache Assets**, active **Block Common Exploits** y configure SSL/TLS (Wildcard o Cloudflare DNS Challenge si aplica).
 
 ## 5. Checklist de validación post-despliegue
 
 - [ ] `docker ps` muestra `resultados-astro-api` (`healthy`) y `resultados-astro-web` (`Up`).
 - [ ] `curl -s http://resultados-astro-web/health` (desde red interna) devuelve `{"status":"ok"}`.
-- [ ] `curl -s http://resultados-astro-web/api/health/db` devuelve `ok: true` para `main`, `auth` y `powerbi`.
-- [ ] La pantalla principal `/` carga sin scroll horizontal ni vertical en TV 16:9.
-- [ ] `/panel-validacion/` y `/admin/` responden correctamente.
-- [ ] Al cabo de 1 ciclo del scheduler (o al invocar `POST /api/sync` con `X-Sync-Token`), se registran filas actualizadas en `POWERBI.INFORESULTADOS` sin errores en `docker logs resultados-astro-api`.
+- [ ] `curl -s http://resultados-astro-web/api/health/db` devuelve `ok: true` para `main`, `powerbi` y estado `sync`.
+- [ ] La pantalla principal `/` carga sin scroll horizontal ni vertical en TV 16:9 y evalúa actualización automática al entrar.
+- [ ] `/carrusel-admin/` permite ingresar con `admin`, ver/subir/eliminar imágenes y se reflejan de inmediato en `/` tras reiniciar contenedores.
+- [ ] `/panel-validacion/` y `/admin/` responden correctamente para sus usuarios autorizados.
+- [ ] En `POWERBI.INFORESULTADOS` quedan sincronizados y verificados los registros automáticamente sin errores en `docker logs resultados-astro-api`.

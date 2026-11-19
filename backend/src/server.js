@@ -1,13 +1,21 @@
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import formbody from '@fastify/formbody';
+import multipart from '@fastify/multipart';
 import Fastify from 'fastify';
 import { closeAllPools, sanitizeDbError } from './config/db.js';
 import { env, getBogotaDateParts } from './config/env.js';
 import { adminRoutes } from './routes/admin.js';
+import { carouselAdminRoutes } from './routes/carouselAdmin.js';
 import { healthRoutes } from './routes/health.js';
 import { resultadosRoutes } from './routes/resultados.js';
 import { syncRoutes } from './routes/sync.js';
-import { ejecutarSincronizacionCompleta } from './services/syncPowerBiService.js';
+import { initCarouselAuthStore } from './services/carouselAuthService.js';
+import { seedCarouselIfNeeded } from './services/carouselService.js';
+import {
+  evaluarYEjecutarSincronizacionSiCorresponde,
+  initSyncState
+} from './services/syncPowerBiService.js';
 
 export async function buildServer() {
   const fastify = Fastify({
@@ -19,10 +27,18 @@ export async function buildServer() {
 
   await fastify.register(cors, {
     origin: true,
-    methods: ['GET', 'POST', 'PUT', 'HEAD', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'],
+    credentials: true
   });
 
+  await fastify.register(cookie);
   await fastify.register(formbody);
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: env.carousel.maxFileSizeBytes,
+      files: 1
+    }
+  });
 
   // Manejo centralizado de excepciones sin exponer credenciales ni detalles internos sensibles
   fastify.setErrorHandler((error, request, reply) => {
@@ -38,6 +54,7 @@ export async function buildServer() {
   await fastify.register(resultadosRoutes);
   await fastify.register(syncRoutes);
   await fastify.register(adminRoutes);
+  await fastify.register(carouselAdminRoutes);
 
   return fastify;
 }
@@ -45,6 +62,11 @@ export async function buildServer() {
 let autoSyncTimer = null;
 
 async function startServer() {
+  // Inicialización idempotente de almacenamiento persistente, usuario GESTOR_CARRUSEL y estado de sync
+  await seedCarouselIfNeeded();
+  await initCarouselAuthStore();
+  await initSyncState();
+
   const fastify = await buildServer();
 
   const shutdown = async (signal) => {
@@ -71,35 +93,43 @@ async function startServer() {
     `Servidor resultados-astro-api escuchando en http://${env.host}:${env.port} (TZ=${env.tz}, Hora=${bogota.isoDateTime})`
   );
 
-  // Planificador de sincronización automática en segundo plano (actualiza_baloto + INFORESULTADOS PowerBI)
+  // Planificador central en el backend (independiente del navegador; evalúa intervalos en America/Bogota)
   if (env.sync.autoSyncEnabled) {
     if (env.sync.autoSyncOnStartup) {
       setTimeout(() => {
-        ejecutarSincronizacionCompleta()
+        evaluarYEjecutarSincronizacionSiCorresponde({
+          trigger: 'startup',
+          blocking: true
+        })
           .then((res) => {
             fastify.log.info(
-              { status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
-              'Sincronización inicial completada'
+              { triggered: res.triggered, status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
+              'Evaluación inicial de sincronización completada'
             );
           })
           .catch((err) => {
-            fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en sincronización inicial');
+            fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en evaluación inicial de sincronización');
           });
       }, 3000);
     }
 
     autoSyncTimer = setInterval(() => {
-      ejecutarSincronizacionCompleta()
+      evaluarYEjecutarSincronizacionSiCorresponde({
+        trigger: 'scheduler',
+        blocking: true
+      })
         .then((res) => {
-          fastify.log.info(
-            { status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
-            'Sincronización periódica completada'
-          );
+          if (res.triggered) {
+            fastify.log.info(
+              { status: res.status, powerBiSyncedCount: res.powerBiSyncedCount },
+              'Sincronización programada completada'
+            );
+          }
         })
         .catch((err) => {
-          fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en sincronización periódica');
+          fastify.log.warn({ err: sanitizeDbError(err) }, 'Error en sincronización programada');
         });
-    }, env.sync.autoSyncIntervalMs);
+    }, env.sync.schedulerTickMs);
 
     autoSyncTimer.unref();
   }
