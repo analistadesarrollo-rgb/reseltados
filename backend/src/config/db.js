@@ -2,7 +2,6 @@ import mysql from 'mysql2/promise';
 import { env } from './env.js';
 
 let mainPool = null;
-let authPool = null;
 let powerBiPool = null;
 
 /**
@@ -13,7 +12,6 @@ export function sanitizeDbError(err) {
   const msg = String(err.message || err.code || 'Error de conexión');
   const secrets = [
     env.dbMain.password,
-    env.dbAuth.password,
     env.dbPowerBi.password
   ].filter(Boolean);
 
@@ -46,30 +44,6 @@ export function getMainPool() {
     });
   }
   return mainPool;
-}
-
-/**
- * Pool de conexión independiente para Base de Datos de Autenticación (bdpersona - MariaDB)
- */
-export function getAuthPool() {
-  if (!authPool) {
-    authPool = mysql.createPool({
-      host: env.dbAuth.host,
-      port: env.dbAuth.port,
-      user: env.dbAuth.user,
-      password: env.dbAuth.password,
-      database: env.dbAuth.database,
-      charset: 'utf8',
-      waitForConnections: true,
-      connectionLimit: env.dbAuth.connectionLimit,
-      queueLimit: 0,
-      connectTimeout: env.dbAuth.connectTimeout,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 10000,
-      dateStrings: true
-    });
-  }
-  return authPool;
 }
 
 /**
@@ -165,7 +139,6 @@ export async function checkDatabasesHealth() {
 export async function closeAllPools() {
   const promises = [];
   if (mainPool) promises.push(mainPool.end().catch(() => {}));
-  if (authPool) promises.push(authPool.end().catch(() => {}));
   if (powerBiPool) promises.push(powerBiPool.end().catch(() => {}));
   await Promise.all(promises);
 }

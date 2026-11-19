@@ -14,7 +14,7 @@ Documentación técnica de las mejoras implementadas sobre `resultados_astro`.
 - **Rol y permisos exclusivos**:
   - Rol asignado: `GESTOR_CARRUSEL`
   - Permisos: `carousel:read`, `carousel:upload`, `carousel:delete`
-  - **Aislamiento RBAC real en backend**: `admin.js` (panel de acumulados/Baloto/Revancha) y `sync.js` (disparo de sincronización) rechazan explícitamente con **HTTP 403 Forbidden** cualquier solicitud autenticada con sesión `GESTOR_CARRUSEL` (incluso si envía `X-Requested-With: XMLHttpRequest`).
+  - **Aislamiento RBAC real en backend**: `sync.js` (disparo de sincronización y reintentos) rechaza explícitamente con **HTTP 403 Forbidden** cualquier solicitud autenticada con sesión `GESTOR_CARRUSEL` (incluso si envía `X-Requested-With: XMLHttpRequest`).
 
 ## 2. Módulo independiente de administración de imágenes
 
@@ -75,7 +75,7 @@ Se respetan intactos los intervalos originales identificados mediante ingenierí
 - `src/services/carouselAuthService.js` *(nuevo)*: Bootstrap idempotente de `admin`, hash `scrypt`, sesiones persistentes, cookies seguras, CSRF, cambio de contraseña, rate limit anti fuerza bruta y RBAC `GESTOR_CARRUSEL`.
 - `src/services/carouselService.js`: Siembra idempotente, validación binaria (magic bytes), subida atómica, listado detallado y borrado seguro anti-traversal.
 - `src/routes/carouselAdmin.js` *(nuevo)*: Endpoints REST `/api/carousel-admin/*`.
-- `src/routes/admin.js` y `src/routes/sync.js`: Bloqueo explícito `403` para `GESTOR_CARRUSEL`, además de `/api/sync/check-due` y `/api/sync/retry-powerbi`.
+- `src/routes/sync.js`: Bloqueo explícito `403` para `GESTOR_CARRUSEL`, además de `/api/sync/check-due` y `/api/sync/retry-powerbi`.
 - `src/services/syncPowerBiService.js`: Bloqueo persistente + distribuido MariaDB `GET_LOCK`, estado persistente `sync-state.json`, historial, duración, verificación post-commit PowerBI, evaluación central por intervalos y reintento sin duplicados.
 - `src/routes/resultados.js` y `src/routes/health.js`: Soporte de `?checkSync=1` no bloqueante en `/api/datos` y alias `/api/health/db`.
 - `src/server.js`: Registro de cookies/multipart, inicializaciones idempotentes al arrancar y scheduler central.

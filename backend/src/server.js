@@ -5,7 +5,6 @@ import multipart from '@fastify/multipart';
 import Fastify from 'fastify';
 import { closeAllPools, sanitizeDbError } from './config/db.js';
 import { env, getBogotaDateParts } from './config/env.js';
-import { adminRoutes } from './routes/admin.js';
 import { carouselAdminRoutes } from './routes/carouselAdmin.js';
 import { healthRoutes } from './routes/health.js';
 import { resultadosRoutes } from './routes/resultados.js';
@@ -53,7 +52,6 @@ export async function buildServer() {
   await fastify.register(healthRoutes);
   await fastify.register(resultadosRoutes);
   await fastify.register(syncRoutes);
-  await fastify.register(adminRoutes);
   await fastify.register(carouselAdminRoutes);
 
   return fastify;

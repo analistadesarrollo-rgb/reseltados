@@ -6,7 +6,6 @@ import {
   getSyncStatus,
   reintentarSincronizacionPowerBiPendiente
 } from '../services/syncPowerBiService.js';
-import { verifyAdminToken } from './admin.js';
 
 async function authorizeSyncRequest(request, reply) {
   const configuredToken = env.sync.syncApiToken;
@@ -17,11 +16,6 @@ async function authorizeSyncRequest(request, reply) {
       : '');
 
   if (configuredToken && headerToken === configuredToken) {
-    return true;
-  }
-
-  // Permitir token de sesión administrativa válida (ADMIN_RESULTADOS)
-  if (headerToken && verifyAdminToken(headerToken)) {
     return true;
   }
 

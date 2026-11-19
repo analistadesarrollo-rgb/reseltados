@@ -21,7 +21,7 @@ Características obligatorias implementadas:
 Cree el archivo `.env` en el servidor (nunca lo suba a Git) o actualice el Secret file **`ENV_RESULTADOS_ASTRO`** en Jenkins a partir de `.env.example`:
 
 - `TZ=America/Bogota`, `PORT=3000`, `HOST=0.0.0.0`, `NODE_ENV=production`
-- `DB_MAIN_*`, `DB_AUTH_*`, `DB_POWERBI_*`
+- `DB_MAIN_*`, `DB_POWERBI_*`
 - `API_RESULTADOS_BASE_URL=http://172.20.1.221:7080/api/v1/resultados`
 - `SYNC_API_TOKEN` (token secreto para autorizar `POST /api/sync`)
 - `AUTO_SYNC_ENABLED=true`, `AUTO_SYNC_INTERVAL_MS=3600000`, `AUTO_SYNC_ON_STARTUP=true`
@@ -60,5 +60,5 @@ En el panel de Nginx Proxy Manager conectado a la red `red-gane-int`:
 - [ ] `curl -s http://resultados-astro-web/api/health/db` devuelve `ok: true` para `main`, `powerbi` y estado `sync`.
 - [ ] La pantalla principal `/` carga sin scroll horizontal ni vertical en TV 16:9 y evalúa actualización automática al entrar.
 - [ ] `/carrusel-admin/` permite ingresar con `admin`, ver/subir/eliminar imágenes y se reflejan de inmediato en `/` tras reiniciar contenedores.
-- [ ] `/panel-validacion/` y `/admin/` responden correctamente para sus usuarios autorizados.
+- [ ] `/panel-validacion/` responde correctamente para monitoreo y sincronización manual.
 - [ ] En `POWERBI.INFORESULTADOS` quedan sincronizados y verificados los registros automáticamente sin errores en `docker logs resultados-astro-api`.

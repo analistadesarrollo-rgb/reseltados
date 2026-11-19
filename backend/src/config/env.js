@@ -37,16 +37,6 @@ export const env = {
     connectTimeout: Number.parseInt(process.env.DB_MAIN_CONNECT_TIMEOUT || '10000', 10)
   },
 
-  dbAuth: {
-    host: process.env.DB_AUTH_HOST || process.env.DB_MAIN_HOST || '',
-    port: Number.parseInt(process.env.DB_AUTH_PORT || process.env.DB_MAIN_PORT || '3306', 10),
-    user: process.env.DB_AUTH_USER || '',
-    password: process.env.DB_AUTH_PASSWORD || '',
-    database: process.env.DB_AUTH_NAME || 'bdpersona',
-    connectionLimit: Number.parseInt(process.env.DB_AUTH_POOL_LIMIT || '5', 10),
-    connectTimeout: Number.parseInt(process.env.DB_AUTH_CONNECT_TIMEOUT || '10000', 10)
-  },
-
   dbPowerBi: {
     host: process.env.DB_POWERBI_HOST || '',
     port: Number.parseInt(process.env.DB_POWERBI_PORT || '5010', 10),

@@ -15,8 +15,8 @@ resultados_astro/
 ├── backend/                  # API REST Node.js + Fastify + MySQL2
 │   ├── src/
 │   │   ├── config/           # env.js, db.js (pools main, auth, powerbi)
-│   │   ├── routes/           # health.js, resultados.js, sync.js, admin.js
-│   │   ├── services/         # resultadosService, scraperService, syncPowerBiService, carouselService
+│   │   ├── routes/           # health.js, resultados.js, sync.js, carouselAdmin.js
+│   │   ├── services/         # resultadosService, scraperService, syncPowerBiService, carouselService, carouselAuthService
 │   │   ├── server.js         # Punto de entrada Fastify (0.0.0.0:3000)
 │   │   └── test-verification.js
 │   ├── Dockerfile
@@ -26,7 +26,7 @@ resultados_astro/
 │   ├── src/
 │   │   ├── components/       # HeaderBar, LoteriasOficiales, SorteosDiarios, ResumenSemanal, BottomSection, FullscreenCarousel, BoardScripts
 │   │   ├── layouts/          # Layout.astro
-│   │   ├── pages/            # index.astro, androidtv.astro, panel-validacion.astro, admin.astro
+│   │   ├── pages/            # index.astro, androidtv.astro, panel-validacion.astro, carrusel-admin.astro
 │   │   └── styles/           # global.css (TV 16:9 zero-scroll)
 │   ├── astro.config.mjs
 │   ├── Dockerfile
@@ -50,7 +50,6 @@ resultados_astro/
 | `/` | Pantalla principal de resultados para televisores (16:9 sin scroll, con carrusel automático) |
 | `/androidtv/` | Variante para Android TV con solicitud automática de pantalla completa |
 | `/panel-validacion/` | Panel de validación, diagnóstico de BD, métricas y disparo manual de sincronización |
-| `/admin/` | Panel administrativo para edición manual de acumulados (con sincronización automática a PowerBI) |
 | `/carrusel-admin/` | Consola independiente para usuario restringido (`GESTOR_CARRUSEL`) de imágenes del carrusel |
 
 ## Endpoints del Backend
@@ -66,8 +65,6 @@ resultados_astro/
 | `GET` | `/api/sync/status` | Estado de la última sincronización, PowerBI, errores e historial |
 | `GET` / `POST` | `/api/sync/check-due` | Evalúa en servidor si corresponde sincronizar según intervalo |
 | `POST` | `/api/sync` y `/api/sync/retry-powerbi` | Ejecuta sincronización manual o reintento PowerBI pendiente |
-| `POST` | `/api/admin/login` | Autenticación contra `bdpersona.tbusuario` |
-| `GET` / `PUT` | `/api/admin/acumulados` | Consulta y actualización manual de acumulados + sincronización a `POWERBI.INFORESULTADOS` |
 | `*` | `/api/carousel-admin/*` | Login, sesión HttpOnly, CSRF, subida, listado y borrado exclusivo del carrusel (`GESTOR_CARRUSEL`) |
 
 ## Ejecución local rápida

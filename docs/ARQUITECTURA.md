@@ -18,7 +18,6 @@ El sistema desacopla completamente la capa de presentación (estática y ultrali
                                        ▼
                         [resultados-astro-api (Node.js 22 + Fastify 5 :3000)]
                            ├── Pool Main DB (172.20.1.92:3306 / chatbot)
-                           ├── Pool Auth DB (172.20.1.92:3306 / bdpersona)
                            ├── Pool PowerBI DB (aplicacionesgane.cloud:5010 / POWERBI)
                            └── Scheduler interno (cada 60 min, America/Bogota)
 ```

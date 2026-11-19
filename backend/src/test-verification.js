@@ -227,12 +227,24 @@ async function runTests() {
       });
       assert.equal(meRes.statusCode, 200);
 
-      // Comprobar que NO tiene acceso al panel administrativo de resultados ni a /api/sync
+      // Verificar que las rutas eliminadas de /admin retornan 404
+      for (const removedEp of [
+        { method: 'POST', url: '/api/admin/login', payload: { uname: 'test', pass: 'test' } },
+        { method: 'GET', url: '/api/admin/acumulados' }
+      ]) {
+        const res404 = await fastify.inject({
+          method: removedEp.method,
+          url: removedEp.url,
+          headers: removedEp.payload ? { 'content-type': 'application/json' } : {},
+          payload: removedEp.payload
+        });
+        assert.equal(res404.statusCode, 404, `Ruta eliminada ${removedEp.url} debería retornar 404`);
+      }
+
+      // Comprobar que GESTOR_CARRUSEL tiene acceso bloqueado con 403 en endpoints de sincronización
       const blockedEndpoints = [
-        { method: 'GET', url: '/api/admin/acumulados' },
-        { method: 'PUT', url: '/api/admin/acumulados', payload: { acum_3cifras: '99' } },
-        { method: 'PUT', url: '/api/admin/baloto', payload: { resul_baloto1: '01' } },
-        { method: 'POST', url: '/api/sync', headers: { 'x-requested-with': 'XMLHttpRequest' } }
+        { method: 'POST', url: '/api/sync', headers: { 'x-requested-with': 'XMLHttpRequest' } },
+        { method: 'POST', url: '/api/sync/retry-powerbi', headers: { 'x-requested-with': 'XMLHttpRequest' } }
       ];
 
       for (const ep of blockedEndpoints) {
@@ -241,10 +253,8 @@ async function runTests() {
           url: ep.url,
           headers: {
             cookie: sessionCookieHeader,
-            ...(ep.headers || {}),
-            ...(ep.payload ? { 'content-type': 'application/json' } : {})
-          },
-          payload: ep.payload
+            ...(ep.headers || {})
+          }
         });
         assert.equal(
           blockedRes.statusCode,
