@@ -25,10 +25,11 @@ Para que `resultados_astro` sea **100% autónomo** y no dependa del cron legado 
   - `ETL_LOTERIAS_HOURS=1,11,12,13,16,19,21,23`
   - `ETL_LOTERIAS_MINUTE=24`
   - `ETL_LOTERIAS_ON_STARTUP=true`
-- **Triple activación coordinada con idempotencia por franja (`lastCompletedSlotKey`)**:
-  1. Scheduler interno del backend (evalúa cada `60 s`).
+- **Ejecución 100% desde el servidor con idempotencia por franja (`lastCompletedSlotKey`)**:
+  1. Scheduler interno del backend (evalúa cada `60 s` en `server.js`).
   2. Evaluación al arrancar el contenedor (`startup`).
-  3. Verificación no bloqueante al abrir los televisores (`GET /api/datos?checkSync=1`) y disparo manual desde `/panel-validacion/` (**Actualizar ahora** o **Ejecutar ETL Loterías**).
+  3. Disparo manual opcional desde `/panel-validacion/` (**Actualizar ahora** o **Ejecutar ETL Loterías**).
+  - Los televisores (`/` y `/androidtv/`) permanecen estrictamente en modo **solo lectura** (`/api/datos` sin `checkSync=1`).
 - **Bloqueo distribuido de 3 capas** (en memoria + archivo exclusivo `wx` `etl-loterias-lock.json` + `GET_LOCK('resultados_astro_etl_loterias_lock', 0)` en MariaDB) para evitar ejecuciones simultáneas duplicadas.
 
 ### Reglas exactas de formateo y esquema destino

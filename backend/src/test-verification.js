@@ -586,9 +586,8 @@ async function runTests() {
       assert.ok(retryRes.lastPowerBiSyncAt);
     });
 
-    // 12. Verificar evaluación automática al abrir URL pública (/api/datos?checkSync=1)
-    await test('GET /api/datos?checkSync=1 evalúa intervalos en America/Bogota sin bloquear el tablero', async () => {
-      // Simular última actualización y franja ETL recientes en el estado aislado para no escribir innecesariamente en BD real durante npm test
+    // 12. Verificar que /api/datos es estrictamente solo lectura para televisores y el planificador corre solo desde servidor
+    await test('GET /api/datos permanece estrictamente solo lectura (incluso con ?checkSync=1) y planificador corre en servidor', async () => {
       await writeFile(
         join(isolatedDataDir, 'sync-state.json'),
         JSON.stringify({
@@ -618,12 +617,25 @@ async function runTests() {
       assert.equal(rDatos.statusCode, 200);
       const body = rDatos.json();
       assert.equal(body.success, true);
-      assert.ok(body.syncCheck);
-      assert.equal(body.syncCheck.triggered, false);
-      assert.equal(body.syncCheck.reason, 'not_due');
-      assert.ok(body.etlCheck);
-      assert.equal(body.etlCheck.triggered, false);
-      assert.equal(body.etlCheck.reason, 'not_due');
+      assert.equal(body.syncCheck, undefined, 'GET /api/datos no debe disparar ni incluir syncCheck desde TVs');
+      assert.equal(body.etlCheck, undefined, 'GET /api/datos no debe disparar ni incluir etlCheck desde TVs');
+
+      const [syncSched, etlSched] = await Promise.all([
+        evaluarYEjecutarSincronizacionSiCorresponde({
+          trigger: 'scheduler',
+          blocking: false,
+          _dataDir: isolatedDataDir
+        }),
+        evaluarYEjecutarEtlSiCorresponde({
+          trigger: 'scheduler',
+          blocking: false,
+          _dataDir: isolatedDataDir
+        })
+      ]);
+      assert.equal(syncSched.triggered, false);
+      assert.equal(syncSched.reason, 'not_due');
+      assert.equal(etlSched.triggered, false);
+      assert.equal(etlSched.reason, 'not_due');
     });
 
     // 13. Verificar GET_LOCK / RELEASE_LOCK real en MariaDB 172.20.1.92

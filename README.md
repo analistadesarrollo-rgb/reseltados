@@ -58,7 +58,7 @@ resultados_astro/
 |--------|------|-------------|
 | `GET` | `/health` y `/api/health` | Healthcheck HTTP (`{"status":"ok"}`) para Docker y Nginx Proxy Manager |
 | `GET` | `/api/health/db` | Diagnóstico de conectividad de BD Principal y PowerBI |
-| `GET` | `/api/datos?hash=...&checkSync=1` | Datos completos del tablero + evaluación automática de sincronización |
+| `GET` | `/api/datos?hash=...` | Datos completos del tablero en solo lectura para televisores |
 | `GET` | `/api/resultados` | Últimos resultados por código de lotería |
 | `GET` | `/api/time` | Fecha, hora y día de la semana sincronizados en `America/Bogota` |
 | `GET` | `/api/carousel-images` | Listado dinámico de imágenes del carrusel comercial |

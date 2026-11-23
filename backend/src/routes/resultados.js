@@ -1,12 +1,10 @@
 import { getBogotaDateParts } from '../config/env.js';
 import { listarImagenesCarrusel } from '../services/carouselService.js';
-import { evaluarYEjecutarEtlSiCorresponde } from '../services/etlResultadosService.js';
 import {
   getFechasTablero,
   obtenerDatosCompletos,
   obtenerResultadosAcumulados
 } from '../services/resultadosService.js';
-import { evaluarYEjecutarSincronizacionSiCorresponde } from '../services/syncPowerBiService.js';
 
 function setNoCacheHeaders(reply) {
   reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
@@ -15,28 +13,10 @@ function setNoCacheHeaders(reply) {
 }
 
 export async function resultadosRoutes(fastify) {
-  // 1. Tablero completo (equivalente a obtener_datos.php) + evaluación opcional al abrir TV/URL pública
+  // 1. Tablero completo (equivalente a obtener_datos.php): estrictamente solo lectura para televisores.
+  // La actualización automática de resultados (ETL de loterías y sync PowerBI) se ejecuta únicamente desde el servidor.
   const datosHandler = async (request, reply) => {
     setNoCacheHeaders(reply);
-
-    let syncCheck = null;
-    let etlCheck = null;
-    if (request.query?.checkSync === '1') {
-      try {
-        [syncCheck, etlCheck] = await Promise.all([
-          evaluarYEjecutarSincronizacionSiCorresponde({
-            trigger: 'public_visit',
-            blocking: false
-          }),
-          evaluarYEjecutarEtlSiCorresponde({
-            trigger: 'public_visit',
-            blocking: false
-          })
-        ]);
-      } catch {
-        // Nunca bloquear la carga del tablero si falla la evaluación automática
-      }
-    }
 
     const clientHash = request.query?.hash;
     const result = await obtenerDatosCompletos();
@@ -48,17 +28,11 @@ export async function resultadosRoutes(fastify) {
         hash: result.hash,
         fechas: result.fechas,
         timestamp: result.timestamp,
-        fecha_consulta: result.fecha_consulta,
-        ...(syncCheck ? { syncCheck } : {}),
-        ...(etlCheck ? { etlCheck } : {})
+        fecha_consulta: result.fecha_consulta
       };
     }
 
-    return {
-      ...result,
-      ...(syncCheck ? { syncCheck } : {}),
-      ...(etlCheck ? { etlCheck } : {})
-    };
+    return result;
   };
 
   fastify.get('/datos', datosHandler);

@@ -243,15 +243,14 @@
       }
     }
 
-    async function obtenerDatosActualizados(options = {}) {
+    async function obtenerDatosActualizados() {
       if (fetchInFlight) return null;
       fetchInFlight = true;
 
       try {
-        const checkParam = options.checkSync ? '&checkSync=1' : '';
         const query = lastDataHash
-          ? `?hash=${encodeURIComponent(lastDataHash)}&t=${Date.now()}${checkParam}`
-          : `?t=${Date.now()}${checkParam}`;
+          ? `?hash=${encodeURIComponent(lastDataHash)}&t=${Date.now()}`
+          : `?t=${Date.now()}`;
         const response = await fetch(`/api/datos${query}`, {
           method: 'GET',
           cache: 'no-store',
@@ -491,12 +490,7 @@
 
       initNormasSlider();
 
-      const initialPayload = await obtenerDatosActualizados({ checkSync: true });
-      if (initialPayload && initialPayload.syncCheck && (initialPayload.syncCheck.triggered || initialPayload.syncCheck.inProgress)) {
-        setTimeout(() => {
-          obtenerDatosActualizados();
-        }, 15000);
-      }
+      await obtenerDatosActualizados();
       setInterval(obtenerDatosActualizados, 30000);
 
       const initialImages = await fetchCarouselImages();
