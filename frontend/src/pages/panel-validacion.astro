@@ -1,10 +1,17 @@
 ---
+import CacheManagerScript from '../components/CacheManagerScript.astro';
+
+const appVersion = import.meta.env.PUBLIC_APP_BUILD_VERSION || 'dev';
 ---
 <!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="app-version" content={appVersion} />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Panel de Validación - Resultados de Lotería</title>
     <style>
       :root {
@@ -852,5 +859,6 @@
         cargarResultados();
       });
     </script>
+    <CacheManagerScript autoWatch={false} />
   </body>
 </html>

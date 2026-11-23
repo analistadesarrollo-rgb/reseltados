@@ -1,0 +1,151 @@
+---
+interface Props {
+  autoWatch?: boolean;
+  pollIntervalMs?: number;
+}
+
+const { autoWatch = true, pollIntervalMs = 60000 } = Astro.props;
+---
+<script is:inline define:vars={{ autoWatch, pollIntervalMs }}>
+  (function () {
+    const RELOAD_GUARD_KEY = 'resultados_reload_guard';
+    const RELOAD_COOLDOWN_MS = 30000;
+    const metaVersion = document.querySelector('meta[name="app-version"]');
+    const CURRENT_VERSION = metaVersion ? String(metaVersion.getAttribute('content') || '').trim() : '';
+
+    let versionCheckInFlight = false;
+
+    // Limpiar el parámetro temporal ?_v=... una vez que el navegador ya cargó la versión actualizada
+    try {
+      const currentUrl = new URL(window.location.href);
+      const urlVer = currentUrl.searchParams.get('_v');
+      if (urlVer && CURRENT_VERSION && urlVer === CURRENT_VERSION) {
+        currentUrl.searchParams.delete('_v');
+        window.history.replaceState(null, '', currentUrl.toString());
+      }
+    } catch (_err) {
+      // Ignorar en entornos sin soporte completo de URL/History
+    }
+
+    /**
+     * Limpia registros antiguos de Service Workers y Cache Storage del navegador
+     * al abrir el proyecto o detectar nueva versión, sin tocar cookies ni sesiones.
+     */
+    async function limpiarCacheNavegador() {
+      try {
+        if ('serviceWorker' in navigator && typeof navigator.serviceWorker.getRegistrations === 'function') {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((reg) => reg.unregister().catch(() => false)));
+        }
+      } catch (_err) {
+        // Tolerante a WebViews restringidos en Smart TVs
+      }
+
+      try {
+        if ('caches' in window && typeof window.caches.keys === 'function') {
+          const cacheKeys = await window.caches.keys();
+          await Promise.all(cacheKeys.map((key) => window.caches.delete(key).catch(() => false)));
+        }
+      } catch (_err) {
+        // Ignorar si Cache Storage no está habilitado
+      }
+    }
+
+    function yaRecargoRecientemente(targetVersion) {
+      try {
+        const raw = window.sessionStorage.getItem(RELOAD_GUARD_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        return Boolean(
+          parsed &&
+            parsed.v === targetVersion &&
+            typeof parsed.ts === 'number' &&
+            Date.now() - parsed.ts < RELOAD_COOLDOWN_MS
+        );
+      } catch (_err) {
+        return false;
+      }
+    }
+
+    function registrarRecarga(targetVersion) {
+      try {
+        window.sessionStorage.setItem(
+          RELOAD_GUARD_KEY,
+          JSON.stringify({ v: targetVersion, ts: Date.now() })
+        );
+      } catch (_err) {
+        // Ignorar si sessionStorage no está disponible
+      }
+    }
+
+    /**
+     * Verifica /version.json sin caché para detectar despliegues nuevos y recargar automáticamente.
+     */
+    async function verificarNuevaVersion() {
+      if (versionCheckInFlight || !CURRENT_VERSION) return;
+      versionCheckInFlight = true;
+
+      try {
+        const bust = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const resp = await fetch(`/version.json?t=${encodeURIComponent(bust)}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache'
+          }
+        });
+
+        if (!resp.ok) return;
+        const manifest = await resp.json();
+        const remoteVersion = manifest && manifest.version ? String(manifest.version).trim() : '';
+
+        if (!remoteVersion || remoteVersion === CURRENT_VERSION) {
+          return;
+        }
+
+        if (yaRecargoRecientemente(remoteVersion)) {
+          return;
+        }
+
+        registrarRecarga(remoteVersion);
+        await limpiarCacheNavegador();
+
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('_v', remoteVersion);
+        window.location.replace(nextUrl.toString());
+      } catch (_err) {
+        // Nunca interrumpir la pantalla si falla temporalmente la red
+      } finally {
+        versionCheckInFlight = false;
+      }
+    }
+
+    // 1. Al abrir el proyecto: limpiar caché del navegador y comprobar versión vigente
+    limpiarCacheNavegador().finally(() => {
+      verificarNuevaVersion();
+    });
+
+    // 2. Evitar restauración obsoleta desde bfcache o al despertar televisores/navegadores
+    window.addEventListener('pageshow', (event) => {
+      if (event && event.persisted) {
+        limpiarCacheNavegador().finally(() => {
+          verificarNuevaVersion();
+        });
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        verificarNuevaVersion();
+      }
+    });
+
+    // 3. Supervisión continua 24/7 para pantallas abiertas permanentemente
+    if (autoWatch && Number.isFinite(pollIntervalMs) && pollIntervalMs >= 10000) {
+      setInterval(() => {
+        verificarNuevaVersion();
+      }, pollIntervalMs);
+    }
+  })();
+</script>

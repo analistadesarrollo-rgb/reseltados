@@ -59,7 +59,21 @@ En el panel de Nginx Proxy Manager conectado a la red `red-gane-int`:
 4. **Forward Port**: `80`
 5. Desactive **Cache Assets**, active **Block Common Exploits** y configure SSL/TLS (Wildcard o Cloudflare DNS Challenge si aplica).
 
-## 5. Checklist de validación post-despliegue
+## 5. Estrategia anti-caché para televisores 24/7
+
+Para evitar tener que limpiar caché manualmente en los Smart TVs cada vez que Jenkins despliega una nueva versión:
+
+1. **Cabeceras HTTP anti-caché en Nginx ([nginx.conf](../nginx.conf))**:
+   - Todas las rutas HTML (`/`, `/androidtv/`, `/carrusel-admin/`, `/panel-validacion/`), las respuestas API (`/api/*`) y el manifiesto `/version.json` se sirven con `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0`, `CDN-Cache-Control: no-store`, `Pragma: no-cache` y `Expires: 0`.
+   - Las imágenes (`/img/*` e `/img/carousel/*`) usan `Cache-Control: no-cache, must-revalidate`.
+   - Únicamente los assets compilados con hash de contenido en su nombre (`/_astro/*`) usan caché inmutable (`max-age=31536000, immutable`).
+2. **Manifiesto automático de versión (`/version.json`) y meta `<meta name="app-version">`**:
+   - Cada compilación de Astro genera una versión única en `dist/version.json` y la incrusta en todas las páginas HTML.
+3. **Limpieza automática en cliente (`CacheManagerScript.astro`)**:
+   - Al abrir el proyecto (y al restaurar desde *bfcache* vía `pageshow`), limpia Cache Storage y Service Workers antiguos sin afectar cookies ni sesiones.
+   - Consulta `/version.json` sin caché al abrir y cada 60 segundos en las pantallas de TV (`/` y `/androidtv/`). Si detecta una versión nueva tras un despliegue, limpia caché y recarga con `?_v=<nueva_version>` (con protección anti-bucle de 30 s) y luego restaura la URL limpia.
+
+## 6. Checklist de validación post-despliegue
 
 - [ ] `docker ps` muestra `resultados-astro-api` (`healthy`) y `resultados-astro-web` (`Up`).
 - [ ] `curl -s http://resultados-astro-web/health` (desde red interna) devuelve `{"status":"ok"}`.
