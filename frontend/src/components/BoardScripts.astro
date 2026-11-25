@@ -7,6 +7,10 @@
     // =========================================================================
     let serverTimeOffset = 0;
 
+    function getServerNowMs() {
+      return Date.now() + serverTimeOffset;
+    }
+
     const DIAS_SEMANA_ES = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
     const MESES_CORTOS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const MESES_LARGO_ES = [
@@ -74,12 +78,15 @@
 
     async function syncServerTime() {
       try {
-        const response = await fetch('/api/time', { cache: 'no-store' });
+        const reqStart = Date.now();
+        const response = await fetch(`/api/time?t=${reqStart}`, { cache: 'no-store' });
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
+        const reqEnd = Date.now();
         if (data.success) {
+          const rtt = Math.max(0, reqEnd - reqStart);
           const serverMs = data.timestampMs || data.timestamp * 1000;
-          serverTimeOffset = serverMs - Date.now();
+          serverTimeOffset = serverMs - (reqStart + Math.round(rtt / 2));
           if (data.fechas) {
             const f = data.fechas;
             const diaSemanaElem = document.getElementById('dia-semana-display');
@@ -97,14 +104,16 @@
               if (elAnio) elAnio.textContent = f.ultimoSorteo.anio;
             }
           }
+          if (normasReady) syncNormasState();
+          if (carouselReady) syncCarouselState();
         }
       } catch (_err) {
-        updateFechasLocales(new Date(Date.now() + serverTimeOffset));
+        updateFechasLocales(new Date(getServerNowMs()));
       }
     }
 
     function tickClock() {
-      const now = new Date(Date.now() + serverTimeOffset);
+      const now = new Date(getServerNowMs());
       const bogotaTime = now.toLocaleTimeString('en-US', {
         timeZone: 'America/Bogota',
         hour: '2-digit',
@@ -299,41 +308,65 @@
     }
 
     // =========================================================================
-    // 3. MINI CARRUSEL NORMATIVO (COLUMNA INFERIOR)
+    // 3. MINI CARRUSEL NORMATIVO SINCRONIZADO POR RELOJ DEL SERVIDOR
     // =========================================================================
+    const NORMA_DURATION = 40000;
+    let normasReady = false;
+    let normasTimer = null;
+    let normasSlides = [];
+    let normasDots = [];
+
+    function showNorma(idx) {
+      if (normasSlides.length === 0) return;
+      const normalized = ((idx % normasSlides.length) + normasSlides.length) % normasSlides.length;
+      normasSlides.forEach((s, i) => s.classList.toggle('active', i === normalized));
+      normasDots.forEach((d, i) => d.classList.toggle('active', i === normalized));
+    }
+
+    function syncNormasState() {
+      if (normasSlides.length === 0) return;
+      const nowMs = getServerNowMs();
+      const slot = Math.floor(nowMs / NORMA_DURATION);
+      const syncedIdx = ((slot % normasSlides.length) + normasSlides.length) % normasSlides.length;
+      const posInNorma = ((nowMs % NORMA_DURATION) + NORMA_DURATION) % NORMA_DURATION;
+      const msUntilNext = Math.max(50, NORMA_DURATION - posInNorma + 25);
+
+      showNorma(syncedIdx);
+
+      if (normasTimer) clearTimeout(normasTimer);
+      normasTimer = setTimeout(syncNormasState, msUntilNext);
+    }
+
     function initNormasSlider() {
-      const slides = document.querySelectorAll('.normas-slide');
-      const dots = document.querySelectorAll('.normas-dot');
-      if (slides.length === 0) return;
+      normasSlides = Array.from(document.querySelectorAll('.normas-slide'));
+      normasDots = Array.from(document.querySelectorAll('.normas-dot'));
+      if (normasSlides.length === 0) return;
 
-      let currentIdx = 1;
-
-      function showNorma(idx) {
-        currentIdx = (idx + slides.length) % slides.length;
-        slides.forEach((s, i) => s.classList.toggle('active', i === currentIdx));
-        dots.forEach((d, i) => d.classList.toggle('active', i === currentIdx));
-      }
-
-      dots.forEach((dot, i) => {
+      normasDots.forEach((dot, i) => {
         dot.addEventListener('click', () => showNorma(i));
       });
 
-      setInterval(() => {
-        showNorma(currentIdx + 1);
-      }, 40000);
+      normasReady = true;
+      syncNormasState();
     }
 
     // =========================================================================
-    // 4. CARRUSEL COMERCIAL DE PANTALLA COMPLETA (180s RESULTADOS <-> 20s IMAGEN)
+    // 4. CARRUSEL COMERCIAL DE PANTALLA COMPLETA SINCRONIZADO POR RELOJ (180s <-> 20s)
     // =========================================================================
     let carouselImages = [];
     let imageMetadata = {};
     let currentSlide = 0;
-    let currentImageIndex = 0;
     let isCarouselActive = false;
+    let carouselReady = false;
+    let carouselTimer = null;
+    let dataPollTimer = null;
+    let lastPreloadedUrl = '';
 
     const RESULTS_DURATION = 180000;
     const IMAGE_DISPLAY_DURATION = 20000;
+    const CYCLE_DURATION = RESULTS_DURATION + IMAGE_DISPLAY_DURATION;
+    const DATA_POLL_INTERVAL = 30000;
+    const DATA_POLL_JITTER_MS = Math.floor(Math.random() * 350);
 
     function arraysEqual(a, b) {
       if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
@@ -371,7 +404,8 @@
       slides.forEach((img) => {
         const src = img.getAttribute('src') || '';
         if (src.includes(encodeURIComponent(imageName)) || src.includes(imageName)) {
-          const newSrc = `/img/carousel/${encodeURIComponent(imageName)}?v=${Date.now()}`;
+          const ver = encodeURIComponent(imageMetadata[imageName] || Date.now());
+          const newSrc = `/img/carousel/${encodeURIComponent(imageName)}?v=${ver}`;
           const tempImg = new Image();
           tempImg.onload = function () {
             img.style.opacity = '0';
@@ -394,7 +428,7 @@
 
     function goToSlide(index) {
       if (carouselImages.length === 0) return;
-      currentSlide = (index + carouselImages.length) % carouselImages.length;
+      currentSlide = ((index % carouselImages.length) + carouselImages.length) % carouselImages.length;
       updateCarousel();
     }
 
@@ -403,15 +437,19 @@
       if (!container) return;
       container.innerHTML = '';
 
+      const safeActive =
+        carouselImages.length > 0 ? Math.min(Math.max(0, currentSlide), carouselImages.length - 1) : 0;
+
       carouselImages.forEach((image, index) => {
         const slide = document.createElement('div');
-        slide.className = 'carousel-slide' + (index === 0 ? ' active' : '');
+        slide.className = 'carousel-slide' + (index === safeActive ? ' active' : '');
 
         const img = document.createElement('img');
         const versionTag = imageMetadata[image] ? `?v=${encodeURIComponent(imageMetadata[image])}` : '';
         img.src = `/img/carousel/${encodeURIComponent(image)}${versionTag}`;
         img.alt = `Comercial ${index + 1}`;
-        img.loading = 'lazy';
+        img.loading = 'eager';
+        img.decoding = 'async';
         img.onerror = function () {
           this.style.display = 'none';
         };
@@ -425,7 +463,7 @@
 
       carouselImages.forEach((_, index) => {
         const ind = document.createElement('div');
-        ind.className = 'carousel-indicator' + (index === 0 ? ' active' : '');
+        ind.className = 'carousel-indicator' + (index === safeActive ? ' active' : '');
         ind.addEventListener('click', () => goToSlide(index));
         indicatorsContainer.appendChild(ind);
       });
@@ -433,47 +471,79 @@
       container.appendChild(indicatorsContainer);
     }
 
-    async function showSingleImage() {
-      const updated = await fetchCarouselImages();
-      if (Array.isArray(updated)) {
-        if (!arraysEqual(carouselImages, updated)) {
-          carouselImages = updated;
-          createCarouselDOM();
-          if (currentImageIndex >= carouselImages.length) {
-            currentImageIndex = 0;
-          }
-        }
-      }
-
-      if (carouselImages.length === 0) {
-        showResults();
-        return;
-      }
-
-      document.body.classList.add('show-carousel');
-      isCarouselActive = true;
-      currentSlide = currentImageIndex;
-      updateCarousel();
-
-      setTimeout(() => {
-        currentImageIndex = (currentImageIndex + 1) % carouselImages.length;
-        showResults();
-      }, IMAGE_DISPLAY_DURATION);
+    function preloadUpcomingCarouselImage(imageIndex) {
+      if (carouselImages.length === 0) return;
+      const idx = ((imageIndex % carouselImages.length) + carouselImages.length) % carouselImages.length;
+      const imgName = carouselImages[idx];
+      if (!imgName) return;
+      const versionTag = imageMetadata[imgName] ? `?v=${encodeURIComponent(imageMetadata[imgName])}` : '';
+      const url = `/img/carousel/${encodeURIComponent(imgName)}${versionTag}`;
+      if (url === lastPreloadedUrl) return;
+      lastPreloadedUrl = url;
+      const preloader = new Image();
+      preloader.src = url;
     }
 
-    function showResults() {
-      document.body.classList.remove('show-carousel');
-      isCarouselActive = false;
+    async function syncCarouselImagesList() {
+      const updated = await fetchCarouselImages();
+      if (Array.isArray(updated) && !arraysEqual(carouselImages, updated)) {
+        carouselImages = updated;
+        lastPreloadedUrl = '';
+        createCarouselDOM();
+        if (carouselReady) {
+          syncCarouselState();
+        }
+      }
+    }
 
-      setTimeout(() => {
-        showSingleImage();
-      }, RESULTS_DURATION);
+    function syncCarouselState() {
+      const nowMs = getServerNowMs();
+      const cycleIndex = Math.floor(nowMs / CYCLE_DURATION);
+      const posInCycle = ((nowMs % CYCLE_DURATION) + CYCLE_DURATION) % CYCLE_DURATION;
+
+      let msUntilNext;
+
+      if (posInCycle < RESULTS_DURATION || carouselImages.length === 0) {
+        document.body.classList.remove('show-carousel');
+        isCarouselActive = false;
+        preloadUpcomingCarouselImage(cycleIndex);
+        msUntilNext = Math.max(50, RESULTS_DURATION - posInCycle + 25);
+      } else {
+        const syncedImgIdx =
+          ((cycleIndex % carouselImages.length) + carouselImages.length) % carouselImages.length;
+        currentSlide = syncedImgIdx;
+        updateCarousel();
+        document.body.classList.add('show-carousel');
+        isCarouselActive = true;
+        msUntilNext = Math.max(50, CYCLE_DURATION - posInCycle + 25);
+      }
+
+      if (carouselTimer) clearTimeout(carouselTimer);
+      carouselTimer = setTimeout(syncCarouselState, msUntilNext);
+    }
+
+    function scheduleNextDataPoll() {
+      if (dataPollTimer) clearTimeout(dataPollTimer);
+      const nowMs = getServerNowMs();
+      const mod = ((nowMs % DATA_POLL_INTERVAL) + DATA_POLL_INTERVAL) % DATA_POLL_INTERVAL;
+      const msUntilNext = DATA_POLL_INTERVAL - mod + DATA_POLL_JITTER_MS;
+
+      dataPollTimer = setTimeout(async () => {
+        await Promise.all([obtenerDatosActualizados(), syncCarouselImagesList()]);
+        scheduleNextDataPoll();
+      }, msUntilNext);
     }
 
     document.addEventListener('keydown', (e) => {
       if (isCarouselActive && carouselImages.length > 0) {
         if (e.key === 'ArrowLeft') goToSlide(currentSlide - 1);
         if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        syncServerTime();
       }
     });
 
@@ -486,22 +556,15 @@
       setInterval(tickClock, 1000);
 
       await syncServerTime();
-      setInterval(syncServerTime, 300000);
+      setInterval(syncServerTime, 120000);
 
       initNormasSlider();
 
-      await obtenerDatosActualizados();
-      setInterval(obtenerDatosActualizados, 30000);
+      await Promise.all([obtenerDatosActualizados(), syncCarouselImagesList()]);
 
-      const initialImages = await fetchCarouselImages();
-      if (initialImages && initialImages.length > 0) {
-        carouselImages = initialImages;
-        createCarouselDOM();
-      }
-
-      setTimeout(() => {
-        showSingleImage();
-      }, RESULTS_DURATION);
+      carouselReady = true;
+      syncCarouselState();
+      scheduleNextDataPoll();
     });
   })();
 </script>

@@ -73,7 +73,13 @@ Para evitar tener que limpiar caché manualmente en los Smart TVs cada vez que J
    - Al abrir el proyecto (y al restaurar desde *bfcache* vía `pageshow`), limpia Cache Storage y Service Workers antiguos sin afectar cookies ni sesiones.
    - Consulta `/version.json` sin caché al abrir y cada 60 segundos en las pantallas de TV (`/` y `/androidtv/`). Si detecta una versión nueva tras un despliegue, limpia caché y recarga con `?_v=<nueva_version>` (con protección anti-bucle de 30 s) y luego restaura la URL limpia.
 
-## 6. Checklist de validación post-despliegue
+## 6. Sincronización multi-televisor por reloj del servidor
+
+Para que varios televisores en un mismo punto muestren **exactamente al mismo tiempo** el tablero de resultados, el mini carrusel de normas y la misma imagen del carrusel comercial:
+- Cada TV calibra su reloj contra `/api/time` con compensación de latencia (`RTT / 2`) al arrancar, cada 2 minutos y al volver de suspensión (`visibilitychange`).
+- Las transiciones Resultados (`180 s`) ↔ Carrusel Comercial (`20 s`), el índice de la imagen comercial (lista ordenada alfabéticamente), el slide del mini carrusel de normas (`40 s`) y el sondeo de resultados (`/api/datos` cada `30 s` con jitter de `0-350 ms`) se calculan de forma determinista con la hora del servidor en [BoardScripts.astro](../frontend/src/components/BoardScripts.astro).
+
+## 7. Checklist de validación post-despliegue
 
 - [ ] `docker ps` muestra `resultados-astro-api` (`healthy`) y `resultados-astro-web` (`Up`).
 - [ ] `curl -s http://resultados-astro-web/health` (desde red interna) devuelve `{"status":"ok"}`.
