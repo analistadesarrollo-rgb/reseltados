@@ -4,14 +4,15 @@ interface Props {
 }
 
 const { unitLabel = 'MILL' } = Astro.props;
+const appVersion = import.meta.env.PUBLIC_APP_BUILD_VERSION || 'dev';
 
 const normasImages = [
-  { src: '/img/normas/ACCIONES Y VALORES.jpg', alt: 'Acciones y Valores' },
-  { src: '/img/normas/Moneygram (1).jpg', alt: 'MoneyGram' },
-  { src: '/img/normas/seguridad.png', alt: 'Seguridad' },
-  { src: '/img/normas/supergiros.png', alt: 'SuperGIROS' },
-  { src: '/img/normas/tarifas.png', alt: 'Tarifas' },
-  { src: '/img/normas/vueltas.png', alt: 'Vueltas' }
+  { src: `/img/normas/ACCIONES Y VALORES.jpg?v=${appVersion}`, alt: 'Acciones y Valores' },
+  { src: `/img/normas/Moneygram (1).jpg?v=${appVersion}`, alt: 'MoneyGram' },
+  { src: `/img/normas/seguridad.png?v=${appVersion}`, alt: 'Seguridad' },
+  { src: `/img/normas/supergiros.png?v=${appVersion}`, alt: 'SuperGIROS' },
+  { src: `/img/normas/tarifas.png?v=${appVersion}`, alt: 'Tarifas' },
+  { src: `/img/normas/vueltas.png?v=${appVersion}`, alt: 'Vueltas' }
 ];
 ---
 <div class="container3">
